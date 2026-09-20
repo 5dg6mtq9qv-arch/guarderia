@@ -1,0 +1,25 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block title %}Inicio{% endblock %}
+{% block body_class %}public-page{% endblock %}
+{% block content %}
+<div class="public-shell">
+  <header class="public-nav">
+    <a class="brand" href="/"><img class="brand-logo public-logo" src="{% if institucion.logo %}{{ institucion.logo.url }}{% else %}{% static 'core/img/kids-center-logo.png' %}{% endif %}" alt="Kids Center"></a>
+    <a class="btn btn-outline" href="{% url 'login' %}">Acceso administrativo</a>
+  </header>
+  <section class="hero">
+    <div class="hero-art"><span class="color-orbit orbit-pink"></span><span class="color-orbit orbit-green"></span><span class="color-orbit orbit-orange"></span><span class="spark s1">✦</span><span class="spark s2">✦</span><span class="spark s3">●</span><img class="hero-logo" src="{% if institucion.logo %}{{ institucion.logo.url }}{% else %}{% static 'core/img/kids-center-logo.png' %}{% endif %}" alt="Kids Center"></div>
+    <div class="hero-copy">
+      <span class="eyebrow">Bienvenidos a Kids Center</span>
+      <h1>Un lugar para aprender,<br><em>jugar y crecer.</em></h1>
+      <p>Cuidamos cada pequeño paso con alegría, confianza y experiencias que hacen grande su mundo.</p>
+    </div>
+  </section>
+  <section class="purpose-grid">
+    <article><span>01</span><div><small>Nuestro propósito</small><h2>Misión</h2><p>{{ institucion.mision|default:"Brindar cuidado, protección y educación integral en un ambiente seguro y afectuoso." }}</p></div></article>
+    <article><span>02</span><div><small>Hacia dónde vamos</small><h2>Visión</h2><p>{{ institucion.vision|default:"Ser una comunidad educativa referente en el desarrollo feliz de la primera infancia." }}</p></div></article>
+  </section>
+  <footer class="public-footer"><span>© {% now "Y" %} {{ institucion.nombre|default:"Kids Center" }}</span><span>{{ institucion.telefono }}{% if institucion.telefono and institucion.correo %} · {% endif %}{{ institucion.correo }}</span></footer>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#315c52">
+  <title>{% block title %}Guardería{% endblock %} · {{ institucion.nombre|default:"Kids Center" }}</title>
+  <link rel="icon" type="image/png" href="{% static 'core/img/kids-center-logo.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+{% if user.is_authenticated %}
+  <button class="mobile-menu" data-menu aria-label="Abrir menú">☰</button>
+  <aside class="sidebar" id="sidebar">
+    <a href="{% url 'panel' %}" class="brand">
+      <img class="brand-logo sidebar-logo" src="{% if institucion.logo %}{{ institucion.logo.url }}{% else %}{% static 'core/img/kids-center-logo.png' %}{% endif %}" alt="Kids Center">
+      <span class="sr-only">{{ institucion.nombre|default:"Kids Center" }} · Gestión integral</span>
+    </a>
+    <nav>
+      <span class="nav-label">Principal</span>
+      {% if es_administradora %}
+      <a href="{% url 'panel' %}" class="{% if request.resolver_match.url_name == 'panel' %}active{% endif %}"><i>⌂</i> Resumen</a>
+      <a href="{% url 'nomina' %}" class="{% if request.resolver_match.url_name == 'nomina' or request.resolver_match.url_name == 'detalle_nino' %}active{% endif %}"><i>♧</i> Nómina de niños</a>
+      <a href="{% url 'profesoras' %}" class="{% if request.resolver_match.url_name == 'profesoras' %}active{% endif %}"><i>♙</i> Profesoras</a>
+      <a href="{% url 'documentos' %}" class="{% if request.resolver_match.url_name == 'documentos' %}active{% endif %}"><i>▤</i> Documentación</a>
+      <a href="{% url 'seguimientos' %}" class="{% if request.resolver_match.url_name == 'seguimientos' %}active{% endif %}"><i>☆</i> Avances e hitos</a>
+      {% endif %}
+      <a href="{% url 'actividades' %}" class="{% if request.resolver_match.url_name == 'actividades' or request.resolver_match.url_name == 'actividades_nino' %}active{% endif %}"><i>▣</i> {% if es_administradora %}Actividades infantiles{% else %}Mis actividades{% endif %}</a>
+      {% if es_administradora %}
+      <span class="nav-label">Administración</span>
+      <a href="{% url 'pagos' %}" class="{% if request.resolver_match.url_name == 'pagos' %}active{% endif %}"><i>$</i> Pagos y aportes</a>
+      <a href="{% url 'finanzas' %}" class="{% if request.resolver_match.url_name == 'finanzas' %}active{% endif %}"><i>↗</i> Finanzas y gastos</a>
+      <a href="{% url 'comunicacion' %}" class="{% if request.resolver_match.url_name == 'comunicacion' %}active{% endif %}"><i>◉</i> Familias</a>
+      <a href="{% url 'notas' %}" class="{% if request.resolver_match.url_name == 'notas' %}active{% endif %}"><i>✎</i> Mis notas</a>
+      {% endif %}
+    </nav>
+    <div class="sidebar-footer">
+      {% if es_administradora %}
+      <a href="/admin/" target="_blank"><i>⚙</i> Configuración</a>
+      {% endif %}
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit"><i>↪</i> Cerrar sesión</button></form>
+      <div class="user-chip"><span>{{ user.username|slice:":1"|upper }}</span><div><strong>{{ user.get_full_name|default:user.username }}</strong><small>{% if es_administradora %}Administración{% else %}Profesora{% endif %}</small></div></div>
+    </div>
+  </aside>
+{% endif %}
+  <main class="{% if user.is_authenticated %}app-main{% endif %}">
+    {% if messages %}<div class="messages">{% for message in messages %}<div class="message {{ message.tags }}">{{ message }}<button>×</button></div>{% endfor %}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <script src="{% static 'core/js/app.js' %}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

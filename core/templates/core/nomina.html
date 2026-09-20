@@ -1,0 +1,20 @@
+{% extends "core/base.html" %}
+{% block title %}Nómina de niños{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <header class="page-header"><div><span class="eyebrow">Comunidad educativa</span><h1>Nómina de niños</h1><p>Información de cada niño y su familia en un solo lugar.</p></div><button class="btn btn-primary" data-open="nuevo-nino">+ Registrar niño/a</button></header>
+  <div class="toolbar"><form class="search" method="get"><span>⌕</span><input name="q" value="{{ q }}" placeholder="Buscar por nombre, grupo o representante…"></form><span class="count">{{ ninos|length }} registros</span></div>
+  <section class="people-grid">
+    {% for nino in ninos %}
+    <a class="person-card" href="{% url 'detalle_nino' nino.pk %}">
+      <div class="avatar large">{% if nino.foto %}<img src="{{ nino.foto.url }}" alt="">{% else %}{{ nino.nombre|slice:":1" }}{{ nino.apellido|slice:":1" }}{% endif %}</div>
+      <span class="status {{ nino.estado }}">{{ nino.get_estado_display }}</span>
+      <h3>{{ nino }}</h3><p>{{ nino.grupo|default:"Grupo por asignar" }} · {{ nino.edad }} años</p>
+      <div class="person-meta"><span>Representante</span><strong>{{ nino.representante }}</strong><span>Contacto</span><strong>{{ nino.telefono_representante }}</strong></div>
+      <div class="card-link">Ver expediente <b>→</b></div>
+    </a>
+    {% empty %}<div class="empty-state"><span>♧</span><h2>La nómina está lista para empezar</h2><p>Registra al primer niño o niña para crear su expediente.</p><button class="btn btn-primary" data-open="nuevo-nino">Registrar ahora</button></div>{% endfor %}
+  </section>
+</div>
+<dialog id="nuevo-nino" class="modal {% if form.errors %}has-errors{% endif %}"><form method="post" enctype="multipart/form-data">{% csrf_token %}<div class="modal-head"><div><span class="eyebrow">Nuevo expediente</span><h2>Registrar niño/a</h2></div><button type="button" data-close>×</button></div><div class="modal-body">{% include "core/_form_fields.html" with form=form %}</div><div class="modal-actions"><button type="button" class="btn btn-soft" data-close>Cancelar</button><button class="btn btn-primary">Guardar registro</button></div></form></dialog>
+{% endblock %}

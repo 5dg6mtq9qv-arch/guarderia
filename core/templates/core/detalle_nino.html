@@ -1,0 +1,20 @@
+{% extends "core/base.html" %}
+{% block title %}{{ nino }}{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <a class="back" href="{% url 'nomina' %}">← Volver a la nómina</a>
+  <section class="profile-hero">
+    <div class="avatar xlarge">{% if nino.foto %}<img src="{{ nino.foto.url }}" alt="">{% else %}{{ nino.nombre|slice:":1" }}{{ nino.apellido|slice:":1" }}{% endif %}</div>
+    <div><span class="status {{ nino.estado }}">{{ nino.get_estado_display }}</span><h1>{{ nino }}</h1><p>{{ nino.grupo|default:"Grupo por asignar" }} · {{ nino.edad }} años · Ingresó el {{ nino.fecha_ingreso|date:"d/m/Y" }}</p></div>
+    <a class="btn btn-soft" href="/admin/core/nino/{{ nino.pk }}/change/">Editar expediente</a>
+  </section>
+  <div class="profile-grid">
+    <section class="card"><div class="card-head"><div><span class="eyebrow">Datos familiares</span><h2>Representante</h2></div></div><dl class="details"><dt>Nombre</dt><dd>{{ nino.representante }}</dd><dt>Parentesco</dt><dd>{{ nino.parentesco|default:"—" }}</dd><dt>Teléfono</dt><dd>{{ nino.telefono_representante }}</dd><dt>Correo</dt><dd>{{ nino.correo_representante|default:"—" }}</dd><dt>Dirección</dt><dd>{{ nino.direccion|default:"—" }}</dd></dl></section>
+    <section class="card"><div class="card-head"><div><span class="eyebrow">Cuidado</span><h2>Información médica</h2></div></div><div class="medical"><label>Alergias</label><p>{{ nino.alergias|default:"No se han registrado alergias." }}</p><label>Observaciones</label><p>{{ nino.observaciones_medicas|default:"Sin observaciones médicas." }}</p></div></section>
+    <section class="card span-2"><div class="card-head"><div><span class="eyebrow">Archivo individual</span><h2>Documentos</h2></div><a href="{% url 'documentos' %}">Agregar documento →</a></div><div class="file-list">{% for doc in nino.documentos.all %}<a href="{{ doc.archivo.url }}" target="_blank"><span>▤</span><div><strong>{{ doc.titulo }}</strong><small>{{ doc.carpeta }} · {{ doc.get_tipo_display }} · {{ doc.subido|date:"d/m/Y" }}</small></div><b>Descargar</b></a>{% empty %}<p class="empty">No hay documentos archivados todavía.</p>{% endfor %}</div></section>
+    <section class="card span-2"><div class="card-head"><div><span class="eyebrow">Progreso</span><h2>Avances mensuales</h2></div><a href="{% url 'seguimientos' %}">Nuevo seguimiento →</a></div>{% for seguimiento in nino.seguimientos.all %}<div class="progress-item"><div><strong>{{ seguimiento.periodo|date:"F Y" }}</strong><p>{{ seguimiento.resumen|truncatechars:150 }}</p></div><span class="stars">★ {{ seguimiento.promedio_estrellas }}</span></div>{% empty %}<p class="empty">Aún no existen seguimientos para este niño/a.</p>{% endfor %}</section>
+    <section class="card span-2"><div class="card-head"><div><span class="eyebrow">Experiencias</span><h2>Ficha de actividades</h2></div><a href="{% url 'actividades_nino' nino.pk %}">Ver todas →</a></div><div class="activity-mini-grid">{% for actividad in nino.actividades.all|slice:":4" %}<a href="{% url 'actividades_nino' nino.pk %}">{% with foto=actividad.fotos.first %}{% if foto %}<img src="{{ foto.imagen.url }}" alt="">{% endif %}{% endwith %}<span><strong>{{ actividad.titulo }}</strong><small>{{ actividad.fecha|date:"d M Y" }}</small></span></a>{% empty %}<p class="empty">Todavía no hay actividades registradas.</p>{% endfor %}</div></section>
+    <section class="card span-2 family-link"><div><span class="eyebrow">Portal privado de la familia</span><h2>Enlace de {{ nino.nombre }}</h2><p>Comparte este enlace únicamente con su representante. Allí podrá ver publicaciones y avances autorizados.</p></div><div class="copy-box"><input id="family-url" readonly value="{{ request.scheme }}://{{ request.get_host }}{{ nino.get_portal_url }}"><button class="btn btn-primary" data-copy="#family-url">Copiar enlace</button></div></section>
+  </div>
+</div>
+{% endblock %}

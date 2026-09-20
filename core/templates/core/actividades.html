@@ -1,0 +1,19 @@
+{% extends "core/base.html" %}
+{% block title %}Actividades infantiles{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <header class="page-header"><div><span class="eyebrow">Experiencias de aprendizaje</span><h1>{% if profesora_actual %}Mis actividades{% else %}Actividades infantiles{% endif %}</h1><p>{% if profesora_actual %}Registra experiencias únicamente para los niños que tienes asignados.{% else %}Fichas fotográficas creadas por el equipo docente.{% endif %}</p></div><button class="btn btn-primary" data-open="nueva-actividad">+ Registrar actividad</button></header>
+  {% if profesora_actual %}<div class="callout teacher-callout"><span>♙</span><div><strong>{{ profesora_actual.nombre }}</strong><p>Tu acceso está limitado a actividades de tus {{ ninos|length }} niños asignados.</p></div></div>{% endif %}
+  <div class="section-title"><div><span class="eyebrow">Fichas individuales</span><h2>Niños asignados</h2></div><span class="count">{{ ninos|length }}</span></div>
+  <section class="activity-children">
+    {% for nino in ninos %}<a class="child-activity-card" href="{% url 'actividades_nino' nino.pk %}"><div class="activity-cover">{% with ultima=nino.actividades.first %}{% if ultima and ultima.fotos.first %}<img src="{{ ultima.fotos.first.imagen.url }}" alt="Última actividad de {{ nino }}">{% else %}<div class="activity-placeholder">✿</div>{% endif %}{% endwith %}<span>{{ nino.actividades.count }} actividad{{ nino.actividades.count|pluralize:"es" }}</span></div><div class="child-activity-info"><div class="avatar">{% if nino.foto %}<img src="{{ nino.foto.url }}" alt="">{% else %}{{ nino.nombre|slice:":1" }}{% endif %}</div><div><h3>{{ nino }}</h3><p>{{ nino.grupo|default:"Sin grupo asignado" }}</p></div><b>→</b></div></a>
+    {% empty %}<div class="empty-state"><span>♧</span><h2>No tienes niños asignados</h2><p>La administradora debe asignarte niños desde tu perfil de profesora.</p></div>{% endfor %}
+  </section>
+  <div class="section-title recent-title"><div><span class="eyebrow">Registro reciente</span><h2>Últimas actividades</h2></div></div>
+  <section class="activity-feed">
+    {% for actividad in actividades %}<article class="activity-card"><a class="activity-photo" href="{% url 'actividades_nino' actividad.nino_id %}">{% with foto=actividad.fotos.first %}{% if foto %}<img src="{{ foto.imagen.url }}" alt="{{ actividad.titulo }}">{% else %}<div class="activity-placeholder">✿</div>{% endif %}{% endwith %}<span class="area-badge">{{ actividad.get_area_display }}</span>{% if actividad.fotos.count > 1 %}<b>+{{ actividad.fotos.count|add:"-1" }} fotos</b>{% endif %}</a><div class="activity-content"><small>{{ actividad.fecha|date:"d F Y" }} · {{ actividad.profesora.nombre }}</small><h3>{{ actividad.titulo }}</h3><p>{{ actividad.descripcion|truncatechars:130 }}</p><footer><span>{{ actividad.nino }}</span><span class="status {% if actividad.compartir_familia %}activo{% else %}pendiente{% endif %}">{% if actividad.compartir_familia %}Familia{% else %}Privada{% endif %}</span></footer></div></article>
+    {% empty %}<div class="empty-state"><span>▣</span><h2>Aún no hay actividades</h2><p>Registra la primera experiencia con sus fotografías.</p></div>{% endfor %}
+  </section>
+</div>
+<dialog id="nueva-actividad" class="modal {% if form.errors %}has-errors{% endif %}"><form method="post" enctype="multipart/form-data">{% csrf_token %}<div class="modal-head"><div><span class="eyebrow">Nueva experiencia</span><h2>Registrar actividad</h2></div><button type="button" data-close>×</button></div><div class="modal-body">{% include "core/_form_fields.html" with form=form %}</div><div class="modal-actions"><button type="button" class="btn btn-soft" data-close>Cancelar</button><button class="btn btn-primary">Publicar actividad</button></div></form></dialog>
+{% endblock %}

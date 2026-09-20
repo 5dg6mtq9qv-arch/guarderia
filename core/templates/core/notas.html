@@ -1,0 +1,7 @@
+{% extends "core/base.html" %}
+{% block title %}Mis notas{% endblock %}
+{% block content %}
+<div class="page-wrap"><header class="page-header"><div><span class="eyebrow">Espacio privado</span><h1>Mis notas</h1><p>Ideas, pendientes y recordatorios visibles solo para ti.</p></div><button class="btn btn-primary" data-open="nueva-nota">+ Nueva nota</button></header>
+<section class="notes-grid">{% for nota in notas %}<article class="note {{ nota.color }}">{% if nota.fijada %}<span class="pin">●</span>{% endif %}<small>{{ nota.actualizada|date:"d M Y · H:i" }}</small><h2>{{ nota.titulo }}</h2><p>{{ nota.contenido|linebreaksbr }}</p><form method="post" action="{% url 'eliminar_nota' nota.pk %}" onsubmit="return confirm('¿Eliminar esta nota?')">{% csrf_token %}<button>Eliminar</button></form></article>{% empty %}<div class="empty-state"><span>✎</span><h2>Tu espacio está en blanco</h2><p>Guarda aquí tus primeras ideas o pendientes.</p></div>{% endfor %}</section></div>
+<dialog id="nueva-nota" class="modal {% if form.errors %}has-errors{% endif %}"><form method="post">{% csrf_token %}<div class="modal-head"><div><span class="eyebrow">Apunte personal</span><h2>Nueva nota</h2></div><button type="button" data-close>×</button></div><div class="modal-body">{% include "core/_form_fields.html" with form=form %}</div><div class="modal-actions"><button type="button" class="btn btn-soft" data-close>Cancelar</button><button class="btn btn-primary">Guardar nota</button></div></form></dialog>
+{% endblock %}

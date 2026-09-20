@@ -1,0 +1,23 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block title %}Ingresar{% endblock %}
+{% block body_class %}login-page{% endblock %}
+{% block content %}
+<div class="login-shell">
+  <a class="brand login-brand" href="/"><img class="brand-logo login-logo" src="{% if institucion.logo %}{{ institucion.logo.url }}{% else %}{% static 'core/img/kids-center-logo.png' %}{% endif %}" alt="Kids Center"></a>
+  <section class="login-card">
+    <span class="login-icon">✦</span>
+    <small class="eyebrow">Área privada</small>
+    <h1>Qué gusto verte</h1>
+    <p>Ingresa para continuar con la gestión de tu guardería.</p>
+    {% if form.errors %}<div class="form-errors">El usuario o la contraseña no son correctos.</div>{% endif %}
+    <form method="post">{% csrf_token %}
+      <label>Usuario</label>{{ form.username }}
+      <label>Contraseña</label>{{ form.password }}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <button class="btn btn-primary btn-block" type="submit">Ingresar al panel <span>→</span></button>
+    </form>
+  </section>
+  <small class="login-foot">Información protegida · Acceso autorizado</small>
+</div>
+{% endblock %}

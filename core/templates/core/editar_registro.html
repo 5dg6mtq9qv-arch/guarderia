@@ -1,0 +1,5 @@
+{% extends "core/base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="page-wrap narrow-page"><a class="back" href="{% url volver %}">← Volver</a><section class="card edit-card"><div class="card-head"><div><span class="eyebrow">Edición controlada</span><h1>{{ titulo }}</h1><p>{{ subtitulo }}</p></div></div><form method="post" enctype="multipart/form-data">{% csrf_token %}{% include "core/_form_fields.html" with form=form %}<div class="edit-actions"><a class="btn btn-soft" href="{% url volver %}">Cancelar</a><button class="btn btn-primary">Guardar cambios</button></div></form></section></div>
+{% endblock %}

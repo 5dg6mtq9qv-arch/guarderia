@@ -1,0 +1,13 @@
+{% extends "core/base.html" %}
+{% block title %}Actividades de {{ nino.nombre }}{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <a class="back" href="{% url 'actividades' %}">← Volver a actividades</a>
+  <section class="profile-hero activity-profile"><div class="avatar xlarge">{% if nino.foto %}<img src="{{ nino.foto.url }}" alt="">{% else %}{{ nino.nombre|slice:":1" }}{{ nino.apellido|slice:":1" }}{% endif %}</div><div><span class="eyebrow">Ficha de actividades</span><h1>{{ nino }}</h1><p>{{ nino.grupo|default:"Sin grupo" }} · {{ actividades|length }} experiencias registradas</p></div><button class="btn btn-primary" data-open="info-actividad">¿Cómo agregar?</button></section>
+  <section class="activity-timeline">
+    {% for actividad in actividades %}<article class="activity-detail-card"><div class="activity-date"><span>{{ actividad.fecha|date:"d" }}</span><strong>{{ actividad.fecha|date:"M" }}</strong><small>{{ actividad.fecha|date:"Y" }}</small></div><div class="activity-detail-main"><header><div><span class="area-badge">{{ actividad.get_area_display }}</span><h2>{{ actividad.titulo }}</h2><p>Registrada por {{ actividad.profesora.nombre }}</p></div><span class="status {% if actividad.compartir_familia %}activo{% else %}pendiente{% endif %}">{% if actividad.compartir_familia %}Visible para familia{% else %}Uso interno{% endif %}</span></header><div class="activity-gallery {% if actividad.fotos.count == 1 %}single{% endif %}">{% for foto in actividad.fotos.all %}<a href="{{ foto.imagen.url }}" target="_blank"><img src="{{ foto.imagen.url }}" alt="{{ foto.descripcion|default:actividad.titulo }}"></a>{% endfor %}</div><div class="activity-description"><p>{{ actividad.descripcion|linebreaksbr }}</p>{% if actividad.observacion %}<div class="observation"><strong>Logros y observaciones</strong><p>{{ actividad.observacion|linebreaksbr }}</p></div>{% endif %}</div></div></article>
+    {% empty %}<div class="empty-state"><span>✿</span><h2>La ficha de {{ nino.nombre }} está lista</h2><p>Registra su primera actividad desde el botón “Registrar actividad”.</p><a class="btn btn-primary" href="{% url 'actividades' %}">Ir al registro</a></div>{% endfor %}
+  </section>
+</div>
+<dialog id="info-actividad" class="modal"><div class="modal-head"><div><span class="eyebrow">Registro</span><h2>Agregar otra actividad</h2></div><button type="button" data-close>×</button></div><div class="modal-body"><p>Regresa al módulo de actividades y selecciona “Registrar actividad”. Elige a {{ nino.nombre }}, agrega la descripción y selecciona una o varias fotos.</p></div><div class="modal-actions"><a class="btn btn-primary" href="{% url 'actividades' %}">Registrar ahora</a></div></dialog>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "core/base.html" %}
+{% block title %}Resumen{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <header class="page-header"><div><span class="eyebrow">{% now "l, j \d\e F \d\e Y" %}</span><h1>Buenos días, {{ user.first_name|default:user.username }} <span>✦</span></h1><p>Aquí tienes el pulso de tu guardería.</p></div><div class="header-actions"><a class="btn btn-soft" href="{% url 'comunicacion' %}">Nueva publicación</a><a class="btn btn-primary" href="{% url 'nomina' %}#nuevo">+ Registrar niño/a</a></div></header>
+  <section class="metric-grid">
+    <article class="metric green"><div class="metric-icon">♧</div><div><span>Niños activos</span><strong>{{ ninos_activos }}</strong><small>en la nómina actual</small></div></article>
+    <article class="metric ochre"><div class="metric-icon">$</div><div><span>Ingresos del mes</span><strong>${{ ingresos_mes|floatformat:2 }}</strong><small>pagos registrados</small></div></article>
+    <article class="metric coral"><div class="metric-icon">!</div><div><span>Por cobrar</span><strong>${{ total_pendiente|floatformat:2 }}</strong><small>{{ pendientes|length }} cuentas visibles</small></div></article>
+    <article class="metric blue"><div class="metric-icon">♙</div><div><span>Equipo docente</span><strong>{{ profesoras }}</strong><small>profesoras activas</small></div></article>
+  </section>
+  <section class="dashboard-grid">
+    <article class="card span-2">
+      <div class="card-head"><div><span class="eyebrow">Atención requerida</span><h2>Pagos pendientes</h2></div><a href="{% url 'pagos' %}">Ver todos →</a></div>
+      <div class="table-wrap"><table><thead><tr><th>Familia</th><th>Periodo</th><th>Vencimiento</th><th>Saldo</th><th>Estado</th></tr></thead><tbody>
+      {% for item in pendientes %}<tr><td><a class="person" href="{% url 'detalle_nino' item.nino_id %}"><span>{{ item.nino.nombre|slice:":1" }}{{ item.nino.apellido|slice:":1" }}</span><strong>{{ item.nino }}</strong></a></td><td>{{ item.periodo|date:"F Y" }}</td><td>{{ item.fecha_vencimiento|date:"d/m/Y" }}</td><td><strong>${{ item.saldo|floatformat:2 }}</strong></td><td><span class="status {{ item.estado }}">{{ item.get_estado_display }}</span></td></tr>{% empty %}<tr><td colspan="5" class="empty">Todo está al día. No hay saldos pendientes.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </article>
+    <article class="card balance-card">
+      <div class="card-head"><div><span class="eyebrow">Este mes</span><h2>Balance financiero</h2></div></div>
+      <div class="balance-value {% if balance < 0 %}negative{% endif %}">${{ balance|floatformat:2 }}</div>
+      <div class="balance-row"><span><i class="dot green-dot"></i>Ingresos</span><strong>${{ ingresos_mes|floatformat:2 }}</strong></div>
+      <div class="balance-row"><span><i class="dot coral-dot"></i>Gastos</span><strong>${{ gastos_mes|floatformat:2 }}</strong></div>
+      <a class="text-link" href="{% url 'finanzas' %}">Abrir registro financiero →</a>
+    </article>
+    <article class="card span-2">
+      <div class="card-head"><div><span class="eyebrow">Seguimiento</span><h2>Reportes mensuales pendientes</h2></div><a href="{% url 'seguimientos' %}">Gestionar →</a></div>
+      <div class="mini-people">{% for nino in seguimientos_pendientes %}<a href="{% url 'detalle_nino' nino.pk %}"><span>{{ nino.nombre|slice:":1" }}{{ nino.apellido|slice:":1" }}</span><div><strong>{{ nino }}</strong><small>{{ nino.grupo|default:"Sin grupo" }}</small></div><b>Crear reporte</b></a>{% empty %}<p class="empty">Todos los seguimientos del mes están completos. ★</p>{% endfor %}</div>
+    </article>
+    <article class="card">
+      <div class="card-head"><div><span class="eyebrow">Familias</span><h2>Últimas publicaciones</h2></div></div>
+      <div class="activity-list">{% for pub in publicaciones %}<div><span>◉</span><p><strong>{{ pub.titulo }}</strong><small>{{ pub.fecha|timesince }} atrás</small></p></div>{% empty %}<p class="empty">Aún no hay publicaciones.</p>{% endfor %}</div>
+    </article>
+  </section>
+</div>
+{% endblock %}
