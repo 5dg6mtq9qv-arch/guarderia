@@ -119,3 +119,11 @@ class FlujoFinancieroTests(TestCase):
         self.assertEqual(response.status_code, 302)
         mensualidad = Mensualidad.objects.get(nino=self.nino, periodo=date(2026, 10, 1))
         self.assertEqual(mensualidad.valor, Decimal("150.00"))
+
+    def test_centro_de_cobros_filtra_y_calcula_resumen_mensual(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("pagos"), {"mes": "2026-09", "estado": "vencido", "q": "Ana"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ana Prueba")
+        self.assertEqual(response.context["total_facturado"], Decimal("150.00"))
+        self.assertEqual(response.context["total_pendiente"], Decimal("150.00"))

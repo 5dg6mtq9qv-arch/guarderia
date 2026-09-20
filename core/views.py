@@ -169,6 +169,7 @@ def eliminar_nota(request, pk):
 
 @administradora_required
 def pagos(request):
+    hoy = timezone.localdate()
     accion = request.POST.get("accion")
     form_mensualidad = MensualidadForm(prefix="mensualidad")
     form_pago = PagoForm(prefix="pago")
@@ -219,14 +220,70 @@ def pagos(request):
                             actualizadas += 1
                 messages.success(request, f"Mes generado: {creadas} mensualidades nuevas y {actualizadas} actualizadas.")
                 return redirect("pagos")
-    mensualidades = Mensualidad.objects.select_related("nino").prefetch_related("transacciones")
-    for item in mensualidades:
+    mes_solicitado = request.GET.get("mes", hoy.strftime("%Y-%m"))
+    try:
+        anio, mes = (int(parte) for parte in mes_solicitado.split("-", 1))
+        periodo_seleccionado = date(anio, mes, 1)
+    except (TypeError, ValueError):
+        periodo_seleccionado = hoy.replace(day=1)
+        mes_solicitado = periodo_seleccionado.strftime("%Y-%m")
+
+    base_mes = Mensualidad.objects.filter(
+        periodo__year=periodo_seleccionado.year,
+        periodo__month=periodo_seleccionado.month,
+    ).select_related("nino").prefetch_related("transacciones")
+    for item in base_mes:
         item.actualizar_estado()
+
+    todos_mes = list(Mensualidad.objects.filter(
+        periodo__year=periodo_seleccionado.year,
+        periodo__month=periodo_seleccionado.month,
+    ).select_related("nino").prefetch_related("transacciones"))
+    total_facturado = sum((item.valor for item in todos_mes), Decimal("0"))
+    total_cobrado = sum((item.total_pagado for item in todos_mes), Decimal("0"))
+    total_pendiente = sum((item.saldo for item in todos_mes), Decimal("0"))
+    porcentaje_cobrado = round((total_cobrado / total_facturado * 100), 0) if total_facturado else 0
+
+    estado = request.GET.get("estado", "").strip()
+    busqueda = request.GET.get("q", "").strip()
+    mensualidades = Mensualidad.objects.filter(
+        periodo__year=periodo_seleccionado.year,
+        periodo__month=periodo_seleccionado.month,
+    ).select_related("nino").prefetch_related("transacciones")
+    if estado in {"pendiente", "parcial", "pagado", "vencido"}:
+        mensualidades = mensualidades.filter(estado=estado)
+    if busqueda:
+        mensualidades = mensualidades.filter(
+            Q(nino__nombre__icontains=busqueda)
+            | Q(nino__apellido__icontains=busqueda)
+            | Q(nino__representante__icontains=busqueda)
+        )
+
+    meses_disponibles = list(Mensualidad.objects.dates("periodo", "month", order="DESC")[:18])
+    if periodo_seleccionado not in meses_disponibles:
+        meses_disponibles.insert(0, periodo_seleccionado)
     context = {
         "form_mensualidad": form_mensualidad, "form_pago": form_pago, "form_aporte": form_aporte,
-        "mensualidades": mensualidades[:60], "historial": TransaccionPago.objects.select_related("mensualidad__nino")[:30],
-        "aportes": AporteFamiliar.objects.select_related("nino")[:20],
+        "mensualidades": mensualidades[:100],
+        "historial": TransaccionPago.objects.filter(
+            fecha__year=periodo_seleccionado.year, fecha__month=periodo_seleccionado.month,
+        ).select_related("mensualidad__nino")[:60],
+        "aportes": AporteFamiliar.objects.filter(
+            fecha__year=periodo_seleccionado.year, fecha__month=periodo_seleccionado.month,
+        ).select_related("nino")[:40],
         "form_generar": form_generar,
+        "periodo_seleccionado": periodo_seleccionado,
+        "mes_seleccionado": mes_solicitado,
+        "meses_disponibles": meses_disponibles,
+        "estado_seleccionado": estado,
+        "busqueda": busqueda,
+        "total_facturado": total_facturado,
+        "total_cobrado": total_cobrado,
+        "total_pendiente": total_pendiente,
+        "porcentaje_cobrado": porcentaje_cobrado,
+        "cuentas_pagadas": sum(1 for item in todos_mes if item.estado == "pagado"),
+        "cuentas_vencidas": sum(1 for item in todos_mes if item.estado == "vencido"),
+        "total_cuentas": len(todos_mes),
     }
     return render(request, "core/pagos.html", context)
 
