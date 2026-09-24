@@ -83,6 +83,10 @@ class Profesora(models.Model):
     fecha_ingreso = models.DateField(default=timezone.localdate)
     foto = models.ImageField(upload_to="profesoras/fotos/", blank=True, null=True)
     activa = models.BooleanField(default=True)
+    salario_mensual = models.DecimalField(
+        "salario mensual", max_digits=10, decimal_places=2, default=Decimal("0.00"),
+        validators=[MinValueValidator(0)],
+    )
     observaciones = models.TextField(blank=True)
     ninos_asignados = models.ManyToManyField(
         Nino, related_name="profesoras", blank=True, verbose_name="niños asignados",
@@ -258,6 +262,38 @@ class GastoInstitucional(models.Model):
 
     def __str__(self):
         return self.concepto
+
+
+class NominaDocente(models.Model):
+    ESTADOS = [("pendiente", "Pendiente"), ("pagado", "Pagado")]
+    METODOS = [("efectivo", "Efectivo"), ("transferencia", "Transferencia"), ("cheque", "Cheque"), ("otro", "Otro")]
+    profesora = models.ForeignKey(Profesora, on_delete=models.PROTECT, related_name="nominas")
+    periodo = models.DateField(help_text="Mes correspondiente al pago")
+    sueldo_base = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    bonos = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"), validators=[MinValueValidator(0)])
+    descuentos = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"), validators=[MinValueValidator(0)])
+    estado = models.CharField(max_length=12, choices=ESTADOS, default="pendiente")
+    fecha_pago = models.DateField(blank=True, null=True)
+    metodo = models.CharField("método", max_length=20, choices=METODOS, default="transferencia")
+    referencia = models.CharField(max_length=100, blank=True)
+    comprobante = models.FileField(upload_to="nomina/%Y/%m/", blank=True, null=True)
+    observaciones = models.TextField(blank=True)
+    registrado_por = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True)
+    creada = models.DateTimeField(auto_now_add=True)
+    actualizada = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-periodo", "profesora__nombre"]
+        constraints = [models.UniqueConstraint(fields=["profesora", "periodo"], name="nomina_docente_unica_por_periodo")]
+        verbose_name = "nómina docente"
+        verbose_name_plural = "nómina docente"
+
+    @property
+    def total_neto(self):
+        return max(self.sueldo_base + self.bonos - self.descuentos, Decimal("0.00"))
+
+    def __str__(self):
+        return f"{self.profesora} · {self.periodo:%m/%Y}"
 
 
 class Publicacion(models.Model):

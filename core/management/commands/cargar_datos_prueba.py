@@ -1,19 +1,19 @@
 from datetime import date, timedelta
 from decimal import Decimal
-from io import BytesIO
+from pathlib import Path
+from shutil import copyfile
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
-from PIL import Image, ImageDraw, ImageFont
-
 from core.models import (
     Actividad, AporteFamiliar, ArchivoPublicacion, DocumentoNino,
     DocumentoProfesora, FotoActividad, GastoInstitucional, HitoDesarrollo,
-    Mensualidad, Nino, NotaPersonal, Profesora, Publicacion,
+    Mensualidad, Nino, NominaDocente, NotaPersonal, Profesora, Publicacion,
     SeguimientoMensual, TransaccionPago,
 )
 from core.roles import GRUPO_PROFESORA, configurar_roles
@@ -21,6 +21,15 @@ from core.roles import GRUPO_PROFESORA, configurar_roles
 
 User = get_user_model()
 DEMO_PREFIX = "[DEMO]"
+FOTOS_DEMO = {
+    "arte": "pintura.jpg",
+    "motricidad": "juegos.jpg",
+    "lenguaje": "lectura.jpg",
+    "cognitiva": "colores.jpg",
+    "social": "bloques.jpg",
+    "autonomia": "jardin.jpg",
+}
+RUTA_FOTOS = Path(__file__).resolve().parents[2] / "demo_assets"
 
 
 class Command(BaseCommand):
@@ -37,6 +46,7 @@ class Command(BaseCommand):
             return
 
         configurar_roles()
+        self._preparar_fotos()
         hoy = timezone.localdate()
         ahora = timezone.now()
         periodo = hoy.replace(day=1)
@@ -47,11 +57,14 @@ class Command(BaseCommand):
         ninos = self._crear_ninos(hoy)
         profesoras[0].ninos_asignados.set(ninos[:3])
         profesoras[1].ninos_asignados.set(ninos[3:])
+        self._crear_nomina(profesoras, periodo, hoy, administradora)
 
         for indice, nino in enumerate(ninos):
             self._crear_mensualidades(nino, indice, periodo, periodo_anterior, administradora, ahora)
             self._crear_actividad(nino, profesoras[0] if indice < 3 else profesoras[1], indice, hoy)
             self._crear_seguimiento(nino, indice, periodo)
+
+        self._crear_actividades_destacadas(ninos[0], profesoras[0], hoy)
 
         self._crear_documentos(ninos[0], profesoras[0], hoy)
         self._crear_aportes_y_gastos(ninos, hoy)
@@ -63,19 +76,43 @@ class Command(BaseCommand):
             )
 
         self.stdout.write(self.style.SUCCESS(
-            "Datos DEMO listos: 2 profesoras, 6 niños, actividades, fotos, pagos, gastos, documentos y seguimientos."
+            "Datos DEMO listos: 2 profesoras, 6 niños, actividades con fotos, pagos, gastos, documentos y seguimientos."
         ))
+        self.stdout.write(f"Ficha destacada: /nomina/{ninos[0].pk}/")
+        self.stdout.write(f"Portal familiar de muestra: {ninos[0].get_portal_url()}")
         self.stdout.write("Accesos docentes: profe.ana / DemoKids2026! y profe.lucia / DemoKids2026!")
         self.stdout.write("Para retirarlos: python manage.py cargar_datos_prueba --eliminar")
+
+    def _preparar_fotos(self):
+        destino = Path(settings.MEDIA_ROOT) / "demo"
+        destino.mkdir(parents=True, exist_ok=True)
+        for nombre in set(FOTOS_DEMO.values()):
+            origen = RUTA_FOTOS / nombre
+            if not origen.is_file():
+                raise FileNotFoundError(f"Falta la fotografía DEMO: {origen}")
+            copyfile(origen, destino / nombre)
+
+    def _asignar_foto(self, actividad, nombre):
+        foto = actividad.fotos.filter(descripcion__startswith="Foto DEMO").first()
+        if foto is None:
+            foto = actividad.fotos.filter(descripcion__startswith="Imagen ilustrativa DEMO").first()
+        if foto is None:
+            foto = FotoActividad(actividad=actividad)
+        ruta_anterior = foto.imagen.name if foto.pk else ""
+        foto.imagen.name = f"demo/{nombre}"
+        foto.descripcion = "Imagen ilustrativa DEMO de banco de fotos; no corresponde al niño de la ficha"
+        foto.save()
+        if ruta_anterior.startswith("actividades/") and "demo-actividad-DEMO-N-" in ruta_anterior:
+            foto.imagen.storage.delete(ruta_anterior)
 
     def _crear_profesoras(self, hoy):
         grupo = Group.objects.get(name=GRUPO_PROFESORA)
         datos = [
-            ("profe.ana", "Ana Belén Torres", "DEMO-PROF-001", "Inicial 1"),
-            ("profe.lucia", "Lucía Andrade", "DEMO-PROF-002", "Maternal"),
+            ("profe.ana", "Ana Belén Torres", "DEMO-PROF-001", "Inicial 1", Decimal("650.00")),
+            ("profe.lucia", "Lucía Andrade", "DEMO-PROF-002", "Maternal", Decimal("620.00")),
         ]
         resultado = []
-        for username, nombre, identificacion, cargo in datos:
+        for username, nombre, identificacion, cargo, salario in datos:
             usuario, creado = User.objects.get_or_create(username=username, defaults={"first_name": nombre, "email": f"{username}@example.com"})
             if creado:
                 usuario.set_password("DemoKids2026!")
@@ -87,11 +124,36 @@ class Command(BaseCommand):
                     "usuario": usuario, "nombre": nombre, "cargo": f"Docente {cargo}",
                     "telefono": f"09900000{len(resultado) + 1}", "correo": usuario.email,
                     "fecha_ingreso": hoy - timedelta(days=180), "activa": True,
+                    "salario_mensual": salario,
                     "observaciones": f"{DEMO_PREFIX} Perfil creado para pruebas.",
                 },
             )
             resultado.append(profesora)
         return resultado
+
+    def _crear_nomina(self, profesoras, periodo, hoy, administradora):
+        for indice, profesora in enumerate(profesoras):
+            nomina, creada = NominaDocente.objects.get_or_create(
+                profesora=profesora, periodo=periodo,
+                defaults={
+                    "sueldo_base": profesora.salario_mensual,
+                    "bonos": Decimal("35.00") if indice == 0 else Decimal("0.00"),
+                    "descuentos": Decimal("12.50") if indice == 0 else Decimal("0.00"),
+                    "estado": "pagado" if indice == 0 else "pendiente",
+                    "fecha_pago": hoy if indice == 0 else None,
+                    "metodo": "transferencia", "referencia": f"DEMO-NOM-{indice + 1}",
+                    "observaciones": f"{DEMO_PREFIX} Nómina ficticia para pruebas.",
+                    "registrado_por": administradora,
+                },
+            )
+            if creada and nomina.estado == "pagado":
+                GastoInstitucional.objects.update_or_create(
+                    concepto=f"[NÓMINA {periodo:%m/%Y}] {profesora.nombre}",
+                    defaults={
+                        "categoria": "nomina", "monto": nomina.total_neto, "fecha": hoy,
+                        "proveedor": profesora.nombre, "notas": "Pago de nómina docente DEMO.",
+                    },
+                )
 
     def _crear_ninos(self, hoy):
         datos = [
@@ -153,16 +215,30 @@ class Command(BaseCommand):
             nino=nino, titulo=f"{DEMO_PREFIX} {titulos[indice]}",
             defaults={
                 "profesora": profesora, "area": areas[indice], "fecha": hoy - timedelta(days=indice),
-                "descripcion": "Realizamos una experiencia guiada con materiales seguros, participación activa y mucho entusiasmo.",
-                "observacion": "Mostró curiosidad, siguió indicaciones y compartió con sus compañeros.",
+                "descripcion": "Registro ficticio para demostración. Realizamos una experiencia guiada con materiales seguros y participación activa. La foto es ilustrativa.",
+                "observacion": "Ejemplo de seguimiento: mostró curiosidad, siguió indicaciones y compartió con sus compañeros.",
                 "compartir_familia": True,
             },
         )
-        if not actividad.fotos.exists():
-            colores = [(237, 8, 119), (0, 151, 218), (88, 188, 0), (255, 142, 8), (255, 197, 20), (6, 57, 91)]
-            contenido = self._imagen_demo(nino.nombre, titulos[indice], colores[indice])
-            foto = FotoActividad(actividad=actividad, descripcion=f"Foto DEMO de {titulos[indice]}")
-            foto.imagen.save(f"demo-actividad-{nino.identificacion}.jpg", ContentFile(contenido), save=True)
+        self._asignar_foto(actividad, FOTOS_DEMO[areas[indice]])
+
+    def _crear_actividades_destacadas(self, nino, profesora, hoy):
+        experiencias = [
+            ("Creamos historias con imágenes", "lenguaje", 4, "Exploramos un cuento ilustrado, nombramos personajes e inventamos un final en grupo.", "Identificó detalles de las imágenes y contó su parte favorita.", "lectura.jpg"),
+            ("Construimos una ciudad de colores", "social", 8, "Organizamos bloques por tamaño y construimos espacios compartiendo materiales.", "Propuso ideas y esperó su turno durante el juego.", "bloques.jpg"),
+            ("Descubrimos formas y colores", "cognitiva", 12, "Clasificamos materiales por color y forma y armamos pequeñas secuencias.", "Reconoció tres colores y explicó cómo agrupó los objetos.", "colores.jpg"),
+        ]
+        for titulo, area, dias, descripcion, observacion, imagen in experiencias:
+            actividad, _ = Actividad.objects.get_or_create(
+                nino=nino, titulo=f"{DEMO_PREFIX} {titulo}",
+                defaults={
+                    "profesora": profesora, "area": area, "fecha": hoy - timedelta(days=dias),
+                    "descripcion": f"Registro ficticio para demostración. {descripcion} La foto es ilustrativa.",
+                    "observacion": f"Ejemplo de seguimiento: {observacion}",
+                    "compartir_familia": True,
+                },
+            )
+            self._asignar_foto(actividad, imagen)
 
     def _crear_seguimiento(self, nino, indice, periodo):
         seguimiento, _ = SeguimientoMensual.objects.get_or_create(
@@ -199,27 +275,18 @@ class Command(BaseCommand):
     def _crear_publicaciones(self, ninos, hoy):
         publicacion, _ = Publicacion.objects.get_or_create(
             titulo=f"{DEMO_PREFIX} Una semana llena de color",
-            defaults={"mensaje": "Compartimos algunos momentos de juego, arte y descubrimiento de nuestros pequeños.", "publicada": True, "fecha": timezone.now()},
+            defaults={"mensaje": "Publicación ficticia de demostración. Compartimos una muestra de actividades de arte y juego. La imagen es ilustrativa.", "publicada": True, "fecha": timezone.now()},
         )
-        if not publicacion.archivos.exists():
-            archivo = ArchivoPublicacion(publicacion=publicacion, descripcion="Imagen general de demostración")
-            archivo.archivo.save("demo-semana-color.jpg", ContentFile(self._imagen_demo("Kids Center", "Semana de color", (0, 151, 218))), save=True)
+        archivo = publicacion.archivos.filter(descripcion__in=["Imagen general de demostración", "Imagen ilustrativa DEMO de Unsplash"]).first()
+        if archivo is None:
+            archivo = ArchivoPublicacion(publicacion=publicacion)
+        ruta_anterior = archivo.archivo.name if archivo.pk else ""
+        archivo.archivo.name = "demo/pintura.jpg"
+        archivo.descripcion = "Imagen ilustrativa DEMO de Unsplash"
+        archivo.save()
+        if ruta_anterior.startswith("familias/") and "demo-semana-color" in ruta_anterior:
+            archivo.archivo.storage.delete(ruta_anterior)
         publicacion.ninos.clear()  # Sin destinatarios significa visible para todas las familias.
-
-    def _imagen_demo(self, nombre, actividad, color):
-        imagen = Image.new("RGB", (1200, 800), (246, 250, 252))
-        dibujo = ImageDraw.Draw(imagen)
-        dibujo.rounded_rectangle((55, 55, 1145, 745), radius=55, fill=color)
-        dibujo.ellipse((850, -80, 1220, 290), fill=(255, 199, 24))
-        dibujo.ellipse((-110, 550, 260, 920), fill=(90, 190, 5))
-        fuente_ruta = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-        fuente_grande = ImageFont.truetype(fuente_ruta, 72)
-        fuente_media = ImageFont.truetype(fuente_ruta, 38)
-        dibujo.text((110, 300), nombre, font=fuente_grande, fill="white")
-        dibujo.text((112, 400), actividad, font=fuente_media, fill="white")
-        salida = BytesIO()
-        imagen.save(salida, format="JPEG", quality=88, optimize=True)
-        return salida.getvalue()
 
     def _eliminar(self):
         TransaccionPago.objects.filter(referencia__startswith="DEMO-").delete()
@@ -231,6 +298,9 @@ class Command(BaseCommand):
         Publicacion.objects.filter(titulo__startswith=DEMO_PREFIX).delete()
         GastoInstitucional.objects.filter(concepto__startswith=DEMO_PREFIX).delete()
         NotaPersonal.objects.filter(titulo__startswith=DEMO_PREFIX).delete()
+        nombres_profesoras = list(Profesora.objects.filter(identificacion__startswith="DEMO-PROF-").values_list("nombre", flat=True))
+        NominaDocente.objects.filter(profesora__identificacion__startswith="DEMO-PROF-").delete()
+        GastoInstitucional.objects.filter(categoria="nomina", proveedor__in=nombres_profesoras, notas="Pago de nómina docente DEMO.").delete()
         Nino.objects.filter(identificacion__startswith="DEMO-N-").delete()
         DocumentoProfesora.objects.filter(profesora__identificacion__startswith="DEMO-PROF-").delete()
         Profesora.objects.filter(identificacion__startswith="DEMO-PROF-").delete()

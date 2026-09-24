@@ -15,6 +15,7 @@ urlpatterns = [
     path("pagos/", views.pagos, name="pagos"),
     path("pagos/mensualidad/<int:pk>/editar/", views.editar_mensualidad, name="editar_mensualidad"),
     path("pagos/transaccion/<int:pk>/editar/", views.editar_pago, name="editar_pago"),
+    path("pagos/nomina/<int:pk>/editar/", views.editar_nomina, name="editar_nomina"),
     path("finanzas/", views.finanzas, name="finanzas"),
     path("comunicacion/", views.comunicacion, name="comunicacion"),
     path("seguimientos/", views.seguimientos, name="seguimientos"),

@@ -20,6 +20,7 @@ from .forms import (
     GastoForm,
     HitoForm,
     MensualidadForm,
+    NominaDocenteForm,
     NinoForm,
     NotaPersonalForm,
     PagoForm,
@@ -28,6 +29,7 @@ from .forms import (
     PublicacionForm,
     SeguimientoForm,
     GenerarMensualidadesForm,
+    GenerarNominaForm,
 )
 from .models import (
     AporteFamiliar,
@@ -38,6 +40,7 @@ from .models import (
     FotoActividad,
     Mensualidad,
     Nino,
+    NominaDocente,
     NotaPersonal,
     Profesora,
     Publicacion,
@@ -49,6 +52,22 @@ from .roles import es_administradora, es_profesora
 
 administradora_required = user_passes_test(es_administradora, login_url="panel")
 personal_required = user_passes_test(lambda user: es_administradora(user) or es_profesora(user), login_url="login")
+
+
+def _sincronizar_gasto_nomina(nomina):
+    concepto = f"[NÓMINA {nomina.periodo:%m/%Y}] {nomina.profesora.nombre}"
+    if nomina.estado == "pagado":
+        GastoInstitucional.objects.update_or_create(
+            concepto=concepto,
+            defaults={
+                "categoria": "nomina", "monto": nomina.total_neto,
+                "fecha": nomina.fecha_pago or timezone.localdate(),
+                "proveedor": nomina.profesora.nombre,
+                "notas": f"Pago de nómina docente. Referencia: {nomina.referencia or 'Sin referencia'}",
+            },
+        )
+    else:
+        GastoInstitucional.objects.filter(concepto=concepto).delete()
 
 
 def inicio(request):
@@ -91,6 +110,7 @@ def panel(request):
         "gastos_mes": gastos_mes,
         "balance": ingresos_mes - gastos_mes,
         "publicaciones": Publicacion.objects.filter(publicada=True)[:3],
+        "actividades_recientes": Actividad.objects.select_related("nino", "profesora").prefetch_related("fotos")[:4],
         "seguimientos_pendientes": Nino.objects.filter(estado="activo").exclude(seguimientos__periodo__year=hoy.year, seguimientos__periodo__month=hoy.month).distinct()[:6],
     }
     return render(request, "core/panel.html", context)
@@ -175,6 +195,8 @@ def pagos(request):
     form_pago = PagoForm(prefix="pago")
     form_aporte = AporteForm(prefix="aporte")
     form_generar = GenerarMensualidadesForm(prefix="generar")
+    form_nomina = NominaDocenteForm(prefix="nomina")
+    form_generar_nomina = GenerarNominaForm(prefix="generar_nomina")
     if request.method == "POST":
         if accion == "mensualidad":
             form_mensualidad = MensualidadForm(request.POST, prefix="mensualidad")
@@ -220,6 +242,28 @@ def pagos(request):
                             actualizadas += 1
                 messages.success(request, f"Mes generado: {creadas} mensualidades nuevas y {actualizadas} actualizadas.")
                 return redirect("pagos")
+        elif accion == "nomina":
+            form_nomina = NominaDocenteForm(request.POST, request.FILES, prefix="nomina")
+            if form_nomina.is_valid():
+                nomina = form_nomina.save(commit=False)
+                nomina.registrado_por = request.user
+                nomina.save()
+                _sincronizar_gasto_nomina(nomina)
+                messages.success(request, "Registro de nómina guardado y gasto institucional actualizado.")
+                return redirect("pagos")
+        elif accion == "generar_nomina":
+            form_generar_nomina = GenerarNominaForm(request.POST, prefix="generar_nomina")
+            if form_generar_nomina.is_valid():
+                periodo_nomina = form_generar_nomina.cleaned_data["periodo"].replace(day=1)
+                creadas = 0
+                for profesora in Profesora.objects.filter(activa=True, salario_mensual__gt=0):
+                    _, creada = NominaDocente.objects.get_or_create(
+                        profesora=profesora, periodo=periodo_nomina,
+                        defaults={"sueldo_base": profesora.salario_mensual, "registrado_por": request.user},
+                    )
+                    creadas += int(creada)
+                messages.success(request, f"Nómina generada: {creadas} registros docentes nuevos.")
+                return redirect("pagos")
     mes_solicitado = request.GET.get("mes", hoy.strftime("%Y-%m"))
     try:
         anio, mes = (int(parte) for parte in mes_solicitado.split("-", 1))
@@ -260,8 +304,17 @@ def pagos(request):
         )
 
     meses_disponibles = list(Mensualidad.objects.dates("periodo", "month", order="DESC")[:18])
+    meses_nomina = list(NominaDocente.objects.dates("periodo", "month", order="DESC")[:18])
+    for fecha_nomina in meses_nomina:
+        if fecha_nomina not in meses_disponibles:
+            meses_disponibles.append(fecha_nomina)
+    meses_disponibles.sort(reverse=True)
     if periodo_seleccionado not in meses_disponibles:
         meses_disponibles.insert(0, periodo_seleccionado)
+    nominas = list(NominaDocente.objects.filter(
+        periodo__year=periodo_seleccionado.year,
+        periodo__month=periodo_seleccionado.month,
+    ).select_related("profesora"))
     context = {
         "form_mensualidad": form_mensualidad, "form_pago": form_pago, "form_aporte": form_aporte,
         "mensualidades": mensualidades[:100],
@@ -272,6 +325,8 @@ def pagos(request):
             fecha__year=periodo_seleccionado.year, fecha__month=periodo_seleccionado.month,
         ).select_related("nino")[:40],
         "form_generar": form_generar,
+        "form_nomina": form_nomina,
+        "form_generar_nomina": form_generar_nomina,
         "periodo_seleccionado": periodo_seleccionado,
         "mes_seleccionado": mes_solicitado,
         "meses_disponibles": meses_disponibles,
@@ -284,6 +339,10 @@ def pagos(request):
         "cuentas_pagadas": sum(1 for item in todos_mes if item.estado == "pagado"),
         "cuentas_vencidas": sum(1 for item in todos_mes if item.estado == "vencido"),
         "total_cuentas": len(todos_mes),
+        "nominas": nominas,
+        "total_nomina": sum((item.total_neto for item in nominas), Decimal("0")),
+        "nomina_pagada": sum((item.total_neto for item in nominas if item.estado == "pagado"), Decimal("0")),
+        "nomina_pendiente": sum((item.total_neto for item in nominas if item.estado == "pendiente"), Decimal("0")),
     }
     return render(request, "core/pagos.html", context)
 
@@ -310,6 +369,22 @@ def editar_pago(request, pk):
         messages.success(request, "Pago actualizado y saldo recalculado.")
         return redirect("pagos")
     return render(request, "core/editar_registro.html", {"form": form, "titulo": "Editar pago", "subtitulo": str(pago), "volver": "pagos"})
+
+
+@administradora_required
+def editar_nomina(request, pk):
+    nomina = get_object_or_404(NominaDocente, pk=pk)
+    form = NominaDocenteForm(request.POST or None, request.FILES or None, instance=nomina)
+    if request.method == "GET" and not nomina.fecha_pago:
+        form.initial["fecha_pago"] = timezone.localdate()
+    if request.method == "POST" and form.is_valid():
+        nomina = form.save(commit=False)
+        nomina.registrado_por = request.user
+        nomina.save()
+        _sincronizar_gasto_nomina(nomina)
+        messages.success(request, "Nómina docente actualizada correctamente.")
+        return redirect("pagos")
+    return render(request, "core/editar_registro.html", {"form": form, "titulo": "Gestionar nómina docente", "subtitulo": str(nomina), "volver": "pagos"})
 
 
 @administradora_required

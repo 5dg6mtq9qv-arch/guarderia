@@ -1,15 +1,19 @@
 from datetime import date, timedelta
 from decimal import Decimal
 from io import BytesIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.core.management import call_command
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.urls import reverse
 from PIL import Image
 
-from .models import Actividad, FotoActividad, Mensualidad, Nino, Profesora, TransaccionPago
+from .models import Actividad, FotoActividad, GastoInstitucional, Mensualidad, Nino, NominaDocente, Profesora, TransaccionPago
 from .roles import GRUPO_ADMIN, GRUPO_PROFESORA, configurar_roles
 
 
@@ -127,3 +131,40 @@ class FlujoFinancieroTests(TestCase):
         self.assertContains(response, "Ana Prueba")
         self.assertEqual(response.context["total_facturado"], Decimal("150.00"))
         self.assertEqual(response.context["total_pendiente"], Decimal("150.00"))
+
+    def test_nomina_docente_se_genera_y_al_pagar_crea_gasto(self):
+        profesora = Profesora.objects.create(
+            nombre="Docente Nómina", identificacion="DOC-NOM-001",
+            salario_mensual=Decimal("500.00"), activa=True,
+        )
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("pagos"), {
+            "accion": "generar_nomina", "generar_nomina-periodo": "2026-09",
+        })
+        self.assertEqual(response.status_code, 302)
+        nomina = NominaDocente.objects.get(profesora=profesora, periodo=date(2026, 9, 1))
+        self.assertEqual(nomina.sueldo_base, Decimal("500.00"))
+        response = self.client.post(reverse("editar_nomina", args=[nomina.pk]), {
+            "profesora": profesora.pk, "periodo": "2026-09-01",
+            "sueldo_base": "500.00", "bonos": "25.00", "descuentos": "10.00",
+            "estado": "pagado", "fecha_pago": "2026-09-20", "metodo": "transferencia",
+            "referencia": "NOM-PRUEBA", "observaciones": "Pago de prueba",
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(GastoInstitucional.objects.filter(categoria="nomina", monto=Decimal("515.00")).exists())
+
+
+class DatosDemoTests(TestCase):
+    def test_carga_idempotente_con_fotos_y_ficha_familiar(self):
+        with TemporaryDirectory() as media_temporal, override_settings(MEDIA_ROOT=media_temporal):
+            call_command("cargar_datos_prueba", verbosity=0)
+            call_command("cargar_datos_prueba", verbosity=0)
+            nino = Nino.objects.get(identificacion="DEMO-N-001")
+            self.assertEqual(Nino.objects.filter(identificacion__startswith="DEMO-N-").count(), 6)
+            self.assertEqual(nino.actividades.count(), 4)
+            self.assertEqual(FotoActividad.objects.filter(actividad__nino=nino).count(), 4)
+            for foto in FotoActividad.objects.filter(actividad__nino=nino):
+                self.assertTrue(Path(media_temporal, foto.imagen.name).is_file())
+            portal = self.client.get(nino.get_portal_url())
+            self.assertEqual(portal.status_code, 200)
+            self.assertContains(portal, "Creamos historias con imágenes")

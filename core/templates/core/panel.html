@@ -31,6 +31,15 @@
       <div class="card-head"><div><span class="eyebrow">Familias</span><h2>Últimas publicaciones</h2></div></div>
       <div class="activity-list">{% for pub in publicaciones %}<div><span>◉</span><p><strong>{{ pub.titulo }}</strong><small>{{ pub.fecha|timesince }} atrás</small></p></div>{% empty %}<p class="empty">Aún no hay publicaciones.</p>{% endfor %}</div>
     </article>
+    <article class="card span-3">
+      <div class="card-head"><div><span class="eyebrow">Experiencias de aprendizaje</span><h2>Actividades recientes</h2></div><a href="{% url 'actividades' %}">Ver todas →</a></div>
+      <div class="dashboard-activity-grid">
+        {% for actividad in actividades_recientes %}<a class="dashboard-activity" href="{% url 'actividades_nino' actividad.nino_id %}">
+          {% with foto=actividad.fotos.first %}{% if foto %}<img src="{{ foto.imagen.url }}" alt="{{ foto.descripcion|default:actividad.titulo }}">{% else %}<span class="activity-placeholder">✿</span>{% endif %}{% endwith %}
+          <div><small>{{ actividad.fecha|date:"d M Y" }} · {{ actividad.get_area_display }}</small><strong>{{ actividad.titulo }}</strong><span>{{ actividad.nino }}</span></div>
+        </a>{% empty %}<p class="empty">Las actividades con fotos aparecerán aquí.</p>{% endfor %}
+      </div>
+    </article>
   </section>
 </div>
 {% endblock %}

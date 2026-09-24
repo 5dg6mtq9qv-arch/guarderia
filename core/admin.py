@@ -12,6 +12,7 @@ from .models import (
     Institucion,
     Mensualidad,
     Nino,
+    NominaDocente,
     NotaPersonal,
     Profesora,
     Publicacion,
@@ -107,6 +108,13 @@ admin.site.register(AporteFamiliar)
 admin.site.register(GastoInstitucional)
 admin.site.register(ArchivoPublicacion)
 admin.site.register(HitoDesarrollo)
+
+
+@admin.register(NominaDocente)
+class NominaDocenteAdmin(admin.ModelAdmin):
+    list_display = ("profesora", "periodo", "sueldo_base", "bonos", "descuentos", "total_neto", "estado", "fecha_pago")
+    list_filter = ("estado", "periodo", "metodo")
+    search_fields = ("profesora__nombre", "referencia")
 
 
 class FotoActividadInline(admin.TabularInline):

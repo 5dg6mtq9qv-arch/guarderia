@@ -15,6 +15,7 @@ from .models import (
     HitoDesarrollo,
     Mensualidad,
     Nino,
+    NominaDocente,
     NotaPersonal,
     Profesora,
     Publicacion,
@@ -50,6 +51,8 @@ class FormularioBase(forms.ModelForm):
                     self.initial[nombre] = timezone.localtime().replace(second=0, microsecond=0)
                 else:
                     self.initial[nombre] = timezone.localdate()
+            elif nuevo and nombre == "fecha_pago":
+                self.initial[nombre] = timezone.localdate()
 
 
 class NinoForm(FormularioBase):
@@ -67,7 +70,7 @@ class ProfesoraForm(FormularioBase):
         model = Profesora
         fields = [
             "nombre", "identificacion", "cargo", "telefono", "correo", "fecha_ingreso",
-            "foto", "activa", "observaciones", "ninos_asignados",
+            "foto", "activa", "salario_mensual", "observaciones", "ninos_asignados",
         ]
         widgets = {"observaciones": forms.Textarea(attrs={"rows": 2})}
 
@@ -214,6 +217,45 @@ class PagoForm(FormularioBase):
         if mensualidad and monto and monto > mensualidad.saldo:
             self.add_error("monto", f"El pago supera el saldo pendiente de ${mensualidad.saldo:.2f}.")
         return cleaned
+
+
+class NominaDocenteForm(FormularioBase):
+    class Meta:
+        model = NominaDocente
+        exclude = ["registrado_por", "creada", "actualizada"]
+        widgets = {"observaciones": forms.Textarea(attrs={"rows": 2})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields["profesora"].disabled = True
+            self.fields["periodo"].disabled = True
+
+    def clean_periodo(self):
+        return self.cleaned_data["periodo"].replace(day=1)
+
+    def clean(self):
+        cleaned = super().clean()
+        base = cleaned.get("sueldo_base") or 0
+        bonos = cleaned.get("bonos") or 0
+        descuentos = cleaned.get("descuentos") or 0
+        if descuentos > base + bonos:
+            self.add_error("descuentos", "Los descuentos no pueden superar el sueldo más los bonos.")
+        if cleaned.get("estado") == "pagado" and not cleaned.get("fecha_pago"):
+            self.add_error("fecha_pago", "Indique la fecha en que se realizó el pago.")
+        return cleaned
+
+
+class GenerarNominaForm(forms.Form):
+    periodo = forms.DateField(
+        label="Mes de nómina", input_formats=["%Y-%m"],
+        widget=forms.DateInput(format="%Y-%m", attrs={"type": "month", "class": "campo"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.initial["periodo"] = timezone.localdate().replace(day=1)
 
 
 class AporteForm(FormularioBase):

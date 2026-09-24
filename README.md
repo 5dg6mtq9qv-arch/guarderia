@@ -58,6 +58,7 @@ python manage.py collectstatic --noinput
 - Notas personales separadas por usuario.
 - Mensualidades, pagos parciales, aportes y saldos automáticos.
 - Generación masiva de pensiones por mes y edición controlada de cuotas y pagos.
+- Nómina mensual por docente con sueldo, bonos, descuentos, comprobantes y sincronización automática con gastos.
 - Gastos institucionales y balance mensual.
 - Publicaciones con fotos y videos para familias.
 - Enlace privado único por niño/a.
@@ -76,6 +77,8 @@ La asignación y los datos del acceso pueden modificarse desde **Profesoras → 
 
 En **Pagos y aportes → Generar mes completo** se crean las pensiones de todos los niños activos usando el valor configurado en cada ficha. El proceso evita duplicados. Las mensualidades y transacciones muestran una acción **Editar**; una cuota nunca puede reducirse por debajo del total ya pagado.
 
+En la pestaña **Nómina docente** se generan los pagos mensuales usando el salario configurado en cada perfil de profesora. Al marcar una nómina como pagada se crea o actualiza automáticamente su gasto institucional en la categoría Nómina.
+
 ## Datos de demostración
 
 Para cargar registros ficticios e idempotentes:
@@ -84,7 +87,11 @@ Para cargar registros ficticios e idempotentes:
 python manage.py cargar_datos_prueba
 ```
 
-Se crean niños, profesoras, fotografías, actividades, mensualidades con distintos estados, pagos, aportes, gastos, documentos y seguimientos. Los usuarios docentes DEMO son `profe.ana` y `profe.lucia`, ambos con contraseña temporal `DemoKids2026!`.
+Se crean seis niños ficticios, profesoras, actividades con fotos ilustrativas, mensualidades con distintos estados, pagos, aportes, gastos, documentos y seguimientos. La ficha de **Sofía Mendoza** reúne cuatro actividades para recorrer el expediente, el panel y el portal familiar durante una presentación. El comando imprime los enlaces de esa ficha y del portal familiar. Puede ejecutarse varias veces sin duplicar los registros.
+
+Los usuarios docentes DEMO son `profe.ana` y `profe.lucia`, ambos con contraseña temporal `DemoKids2026!`. Para recorrer el panel administrativo, inicie sesión con su cuenta administradora existente. Las fotos y los textos del demo son ilustrativos; no representan registros de niños reales.
+
+Las seis fotografías de muestra se guardan en `core/demo_assets/` y se copian a `media/demo/` al cargar los datos. Su procedencia y licencia están documentadas en [Créditos de imágenes](core/demo_assets/README.md).
 
 Para retirar únicamente estos datos sin afectar registros reales:
 
