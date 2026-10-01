@@ -39,3 +39,151 @@ h1,h2,h3,.person-card h3,.activity-content h3,.child-activity-info h3,.activity-
 .span-3{grid-column:1/-1}.dashboard-activity-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.dashboard-activity{display:block;overflow:hidden;border:1px solid var(--line);border-radius:14px;background:#fff;transition:transform .2s,box-shadow .2s}.dashboard-activity:hover{transform:translateY(-3px);box-shadow:var(--shadow)}.dashboard-activity>img,.dashboard-activity>.activity-placeholder{width:100%;height:155px;display:grid;place-items:center;object-fit:cover}.dashboard-activity>div{padding:12px 14px 14px}.dashboard-activity small,.dashboard-activity strong,.dashboard-activity div>span{display:block}.dashboard-activity small{color:var(--muted);font-size:9px}.dashboard-activity strong{margin:6px 0;font-size:12px;line-height:1.35}.dashboard-activity div>span{color:var(--green-2);font-size:10px;font-weight:700}
 @media(max-width:1100px){.dashboard-activity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.dashboard-activity-grid{grid-template-columns:1fr}.dashboard-activity>img,.dashboard-activity>.activity-placeholder{height:190px}}
+
+/* Nómina infantil: tarjetas alegres y reconocibles para una guardería */
+.roster-page{position:relative}
+.roster-page:before,.roster-page:after{content:"";position:fixed;border-radius:50%;pointer-events:none;z-index:-1;filter:blur(1px)}
+.roster-page:before{width:260px;height:260px;right:-100px;top:90px;background:rgba(0,156,220,.06)}
+.roster-page:after{width:220px;height:220px;left:190px;bottom:-90px;background:rgba(255,190,18,.08)}
+.roster-header{align-items:center}
+.roster-header .eyebrow{color:#078bc9}
+.roster-header h1{font-family:"Fredoka",sans-serif;color:#062f50}
+.roster-header .btn-primary{background:linear-gradient(135deg,#039bd8,#087fbd);box-shadow:0 10px 22px rgba(0,137,198,.2)}
+.roster-header .btn-primary:hover{background:linear-gradient(135deg,#048bc3,#066da4);transform:translateY(-1px)}
+.roster-header .btn-primary>span{font-size:18px;line-height:1}
+.roster-toolbar{padding:13px 15px;margin-bottom:22px;border:1px solid #e0ebf0;border-radius:16px;background:rgba(255,255,255,.82);box-shadow:0 8px 24px rgba(4,61,93,.035)}
+.roster-toolbar .search{max-width:510px}
+.roster-toolbar .search input{border-color:#dceaf0;background:#fafdff}
+.roster-toolbar .search input:focus{border-color:#0795d7;box-shadow:0 0 0 3px rgba(0,151,218,.1)}
+.roster-toolbar .count{background:#e7f6dd;color:#438d0b;padding:7px 12px}
+.roster-toolbar .count b{font-family:"Fredoka",sans-serif;font-size:12px}
+.roster-page .people-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.roster-page .person-card{--card-color:#079bd7;--card-accent:#ffcb18;overflow:hidden;padding:0;text-align:left;border-color:#dce8ed;border-radius:20px;box-shadow:0 8px 24px rgba(4,54,84,.055)}
+.roster-page .person-card:nth-child(6n+2){--card-color:#ffc51a;--card-accent:#ed0877}
+.roster-page .person-card:nth-child(6n+3){--card-color:#ed0877;--card-accent:#ffca18}
+.roster-page .person-card:nth-child(6n+4){--card-color:#ff8b08;--card-accent:#079bd7}
+.roster-page .person-card:nth-child(6n+5){--card-color:#59bd00;--card-accent:#ffca18}
+.roster-page .person-card:nth-child(6n+6){--card-color:#083f63;--card-accent:#59bd00}
+.roster-page .person-card:hover{border-color:var(--card-color);transform:translateY(-5px);box-shadow:0 16px 34px rgba(4,54,84,.12)}
+.person-card-color{position:relative;display:grid;place-items:center;height:128px;background:var(--card-color);overflow:hidden}
+.person-card-color:after{content:"";position:absolute;left:-20px;bottom:-26px;width:78px;height:60px;border-radius:50%;background:var(--card-accent)}
+.card-bubble{position:absolute;display:block;border-radius:50%;background:var(--card-accent)}
+.bubble-one{width:75px;height:75px;right:-13px;top:-22px}
+.bubble-two{width:15px;height:15px;right:73px;top:19px;opacity:.7}
+.person-card-color .avatar.large{position:relative;z-index:2;width:76px;height:76px;margin:0;border:4px solid rgba(255,255,255,.92);background:#fff;color:var(--card-color);font-family:"Fredoka",sans-serif;font-size:21px;box-shadow:0 7px 18px rgba(3,42,66,.2)}
+.person-card-color>.status{position:absolute;z-index:3;right:12px;bottom:10px;top:auto;padding:5px 9px;border:1px solid rgba(255,255,255,.3);background:rgba(4,45,69,.62);color:#fff;backdrop-filter:blur(5px)}
+.person-card-color>.status.retirado,.person-card-color>.status.graduado{background:rgba(255,255,255,.88);color:#53656e}
+.person-card-body{padding:17px 18px 16px;background:#fff}
+.roster-page .person-card h3{font:700 18px "Fredoka",sans-serif;color:#062f50;margin:0 0 4px}
+.roster-page .person-card-body>p{min-height:18px;margin:0 0 14px;color:#70838d;font-size:10px;font-weight:700}
+.roster-page .person-card-body>p span{color:var(--card-color)}
+.roster-page .person-card-body>p i{padding:0 4px;color:#b5c2c8;font-style:normal}
+.roster-page .person-meta{grid-template-columns:minmax(75px,.8fr) minmax(0,1.35fr);min-height:78px;padding:10px 0;border-color:#e8eff2}
+.roster-page .person-meta span{color:#8b9ba3;font-size:8px;font-weight:800;letter-spacing:.06em}
+.roster-page .person-meta strong{overflow:hidden;color:#314b59;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+.roster-page .card-link{padding-top:12px;border-color:#e8eff2;color:var(--card-color);font-weight:800}
+.roster-page .card-link b{display:grid;place-items:center;width:23px;height:23px;margin-top:-5px;border-radius:50%;background:color-mix(in srgb,var(--card-color) 12%,white);font-size:14px}
+.roster-page .empty-state{background:linear-gradient(135deg,#e7f7ff,#f6fce9 55%,#fff2dc);border-color:#c9e5ef}
+.roster-page .empty-state>span{color:#0795d7}
+.roster-page .empty-state h2{font-family:"Fredoka",sans-serif;color:#062f50}
+@media(max-width:1200px){.roster-page .people-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){.roster-page .people-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.roster-header{align-items:flex-start}.roster-header .btn{width:100%}.roster-toolbar{align-items:stretch;gap:10px;flex-direction:column}.roster-toolbar .search{max-width:none}.roster-toolbar .count{align-self:flex-start}.roster-page .people-grid{grid-template-columns:1fr}.person-card-color{height:140px}}
+
+/* Sistema cromático compartido para todas las tarjetas del área privada */
+.app-main .page-wrap{--accent-blue:#079bd7;--accent-pink:#ed0877;--accent-yellow:#ffc51a;--accent-orange:#ff8b08;--accent-green:#59bd00;--accent-navy:#083f63}
+.app-main .card,.app-main .metric,.app-main .person-card,.app-main .child-activity-card,.app-main .activity-card,.app-main .dashboard-activity,.app-main .payment-stat,.app-main .payment-month-card,.app-main .contribution-grid article,.app-main .payroll-summary>div{--tile-accent:var(--accent-blue);--tile-soft:#e8f7fd}
+
+/* Tarjetas base: franja de color y una luz suave, sin perder legibilidad */
+.app-main .card{position:relative;border-top:4px solid var(--tile-accent);background:linear-gradient(145deg,var(--tile-soft) 0,#fff 92px);box-shadow:0 10px 28px rgba(4,55,87,.065)}
+.app-main .card:before{content:"";position:absolute;right:18px;top:15px;width:36px;height:36px;border-radius:50%;background:var(--tile-accent);opacity:.08;pointer-events:none}
+.app-main .card:hover{box-shadow:0 15px 34px rgba(4,55,87,.09)}
+.dashboard-grid>.card:nth-child(6n+1),.finance-grid>.card:nth-child(6n+1),.split-docs>.card:nth-child(6n+1),.profile-grid>.card:nth-child(6n+1){--tile-accent:var(--accent-blue);--tile-soft:#edf9fe}
+.dashboard-grid>.card:nth-child(6n+2),.finance-grid>.card:nth-child(6n+2),.split-docs>.card:nth-child(6n+2),.profile-grid>.card:nth-child(6n+2){--tile-accent:var(--accent-pink);--tile-soft:#fff0f7}
+.dashboard-grid>.card:nth-child(6n+3),.profile-grid>.card:nth-child(6n+3){--tile-accent:var(--accent-green);--tile-soft:#f2faeb}
+.dashboard-grid>.card:nth-child(6n+4),.profile-grid>.card:nth-child(6n+4){--tile-accent:var(--accent-orange);--tile-soft:#fff6e9}
+.dashboard-grid>.card:nth-child(6n+5){--tile-accent:var(--accent-yellow);--tile-soft:#fffbea}
+.dashboard-grid>.card:nth-child(6n+6){--tile-accent:var(--accent-navy);--tile-soft:#edf5f9}
+.app-main .card .eyebrow{color:var(--tile-accent)}
+
+/* Indicadores principales */
+.app-main .metric{border:1px solid color-mix(in srgb,var(--tile-accent) 24%,#dce7ec);border-top:5px solid var(--tile-accent);background:linear-gradient(135deg,var(--tile-soft),#fff 72%);transition:transform .2s,box-shadow .2s}
+.app-main .metric:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(4,55,87,.1)}
+.app-main .metric.green{--tile-accent:var(--accent-green);--tile-soft:#effae8}
+.app-main .metric.ochre{--tile-accent:var(--accent-yellow);--tile-soft:#fff9df}
+.app-main .metric.coral{--tile-accent:var(--accent-pink);--tile-soft:#fff0f7}
+.app-main .metric.blue{--tile-accent:var(--accent-blue);--tile-soft:#eaf8fe}
+.app-main .metric .metric-icon{background:var(--tile-accent);color:#fff;box-shadow:0 7px 16px color-mix(in srgb,var(--tile-accent) 25%,transparent)}
+
+/* Profesoras y otros perfiles que usan la tarjeta de persona */
+.app-main .page-wrap:not(.roster-page) .people-grid>.person-card{--tile-accent:var(--accent-blue);--tile-soft:#eaf8fe;padding-top:30px;border-top:7px solid var(--tile-accent);background:linear-gradient(160deg,var(--tile-soft),#fff 145px)}
+.app-main .page-wrap:not(.roster-page) .people-grid>.person-card:nth-child(6n+2){--tile-accent:var(--accent-pink);--tile-soft:#fff0f7}
+.app-main .page-wrap:not(.roster-page) .people-grid>.person-card:nth-child(6n+3){--tile-accent:var(--accent-yellow);--tile-soft:#fff9df}
+.app-main .page-wrap:not(.roster-page) .people-grid>.person-card:nth-child(6n+4){--tile-accent:var(--accent-orange);--tile-soft:#fff4e7}
+.app-main .page-wrap:not(.roster-page) .people-grid>.person-card:nth-child(6n+5){--tile-accent:var(--accent-green);--tile-soft:#effae8}
+.app-main .page-wrap:not(.roster-page) .people-grid>.person-card:nth-child(6n+6){--tile-accent:var(--accent-navy);--tile-soft:#edf5f9}
+.app-main .page-wrap:not(.roster-page) .person-card:before{content:"";position:absolute;right:-18px;top:-24px;width:85px;height:85px;border-radius:50%;background:var(--tile-accent);opacity:.16}
+.app-main .page-wrap:not(.roster-page) .person-card .avatar.large{border:4px solid #fff;background:var(--tile-accent);color:#fff;box-shadow:0 7px 18px color-mix(in srgb,var(--tile-accent) 25%,transparent)}
+.app-main .page-wrap:not(.roster-page) .person-card h3{color:#062f50}
+.app-main .page-wrap:not(.roster-page) .person-card .card-link{color:var(--tile-accent)}
+
+/* Publicaciones, seguimientos, actividades y documentos */
+.feed>.post:nth-child(5n+1),.tracking-grid>.tracking:nth-child(5n+1){--tile-accent:var(--accent-blue);--tile-soft:#edf9fe}
+.feed>.post:nth-child(5n+2),.tracking-grid>.tracking:nth-child(5n+2){--tile-accent:var(--accent-pink);--tile-soft:#fff0f7}
+.feed>.post:nth-child(5n+3),.tracking-grid>.tracking:nth-child(5n+3){--tile-accent:var(--accent-green);--tile-soft:#f1faeb}
+.feed>.post:nth-child(5n+4),.tracking-grid>.tracking:nth-child(5n+4){--tile-accent:var(--accent-orange);--tile-soft:#fff5e8}
+.feed>.post:nth-child(5n+5),.tracking-grid>.tracking:nth-child(5n+5){--tile-accent:var(--accent-yellow);--tile-soft:#fffadf}
+.post .avatar,.tracking .avatar{background:var(--tile-accent);color:#fff}
+.tracking .score>span,.tracking .stars i.on{color:var(--tile-accent)}
+.file-list>a{border-radius:10px;transition:background .18s,transform .18s}
+.file-list>a:hover{background:var(--tile-soft);transform:translateX(3px)}
+.file-list>a>span{background:var(--tile-soft);color:var(--tile-accent)}
+.file-list>a>b{color:var(--tile-accent)}
+.child-activity-card,.activity-card,.dashboard-activity{position:relative;border-bottom:4px solid var(--tile-accent)}
+.activity-children>.child-activity-card:nth-child(5n+1),.activity-feed>.activity-card:nth-child(5n+1),.dashboard-activity-grid>.dashboard-activity:nth-child(5n+1){--tile-accent:var(--accent-blue);--tile-soft:#eaf8fe}
+.activity-children>.child-activity-card:nth-child(5n+2),.activity-feed>.activity-card:nth-child(5n+2),.dashboard-activity-grid>.dashboard-activity:nth-child(5n+2){--tile-accent:var(--accent-pink);--tile-soft:#fff0f7}
+.activity-children>.child-activity-card:nth-child(5n+3),.activity-feed>.activity-card:nth-child(5n+3),.dashboard-activity-grid>.dashboard-activity:nth-child(5n+3){--tile-accent:var(--accent-yellow);--tile-soft:#fff9df}
+.activity-children>.child-activity-card:nth-child(5n+4),.activity-feed>.activity-card:nth-child(5n+4),.dashboard-activity-grid>.dashboard-activity:nth-child(5n+4){--tile-accent:var(--accent-orange);--tile-soft:#fff4e7}
+.activity-children>.child-activity-card:nth-child(5n+5),.activity-feed>.activity-card:nth-child(5n+5),.dashboard-activity-grid>.dashboard-activity:nth-child(5n+5){--tile-accent:var(--accent-green);--tile-soft:#effae8}
+.child-activity-card .avatar{background:var(--tile-accent);color:#fff}
+.child-activity-info>b,.dashboard-activity div>span{color:var(--tile-accent)}
+
+/* Cobros: el color refuerza el significado de cada cifra */
+.payment-month-card{--tile-accent:var(--accent-orange);--tile-soft:#fff6e8;border-top:5px solid var(--tile-accent);background:linear-gradient(120deg,var(--tile-soft),#fff 68%)}
+.payment-stat{border-top:5px solid var(--tile-accent);background:linear-gradient(145deg,var(--tile-soft),#fff 76%)}
+.payment-stat.billed{--tile-accent:var(--accent-blue);--tile-soft:#eaf8fe}
+.payment-stat.collected{--tile-accent:var(--accent-green);--tile-soft:#effae8}
+.payment-stat.due{--tile-accent:var(--accent-pink);--tile-soft:#fff0f7}
+.payment-stat .payment-stat-icon{background:var(--tile-accent)!important;color:#fff!important}
+.contribution-grid article:nth-child(4n+1),.payroll-summary>div:nth-child(4n+1){--tile-accent:var(--accent-orange);--tile-soft:#fff4e7}
+.contribution-grid article:nth-child(4n+2),.payroll-summary>div:nth-child(4n+2){--tile-accent:var(--accent-blue);--tile-soft:#eaf8fe}
+.contribution-grid article:nth-child(4n+3),.payroll-summary>div:nth-child(4n+3){--tile-accent:var(--accent-green);--tile-soft:#effae8}
+.contribution-grid article:nth-child(4n+4),.payroll-summary>div:nth-child(4n+4){--tile-accent:var(--accent-pink);--tile-soft:#fff0f7}
+.contribution-grid article,.payroll-summary>div{border-left:5px solid var(--tile-accent);background:linear-gradient(110deg,var(--tile-soft),#fff 58%)}
+.contribution-grid article>span{background:var(--tile-accent);color:#fff}
+
+/* Portal familiar: mantiene la misma identidad fuera del panel administrativo */
+.family-tracking>article{position:relative;overflow:hidden;border-top:5px solid #079bd7;background:linear-gradient(145deg,#edf9fe,#fff 105px);box-shadow:0 10px 28px rgba(4,55,87,.07)}
+.family-tracking>article:nth-child(5n+2){border-color:#ed0877;background:linear-gradient(145deg,#fff0f7,#fff 105px)}
+.family-tracking>article:nth-child(5n+3){border-color:#59bd00;background:linear-gradient(145deg,#f1faeb,#fff 105px)}
+.family-activity-copy{border-left:5px solid #ff8b08;padding-left:20px}
+
+/* Fichas amplias, avisos y estados vacíos también participan del sistema */
+.app-main .profile-hero{position:relative;overflow:hidden;border:1px solid #cfe8f2;border-left:7px solid var(--accent-blue);background:linear-gradient(120deg,#eaf8fe,#fff 58%);box-shadow:0 10px 28px rgba(4,55,87,.06)}
+.app-main .profile-hero:after{content:"";position:absolute;right:-32px;top:-48px;width:130px;height:130px;border-radius:50%;background:var(--accent-yellow);opacity:.18;pointer-events:none}
+.app-main .family-link{--tile-accent:var(--accent-green);--tile-soft:#effae8}
+.app-main .balance-card{--tile-accent:var(--accent-green);--tile-soft:#effae8}
+.activity-detail-card{--detail-accent:var(--accent-blue);--detail-soft:#eaf8fe}
+.activity-detail-card:nth-child(5n+2){--detail-accent:var(--accent-pink);--detail-soft:#fff0f7}
+.activity-detail-card:nth-child(5n+3){--detail-accent:var(--accent-yellow);--detail-soft:#fff9df}
+.activity-detail-card:nth-child(5n+4){--detail-accent:var(--accent-orange);--detail-soft:#fff4e7}
+.activity-detail-card:nth-child(5n+5){--detail-accent:var(--accent-green);--detail-soft:#effae8}
+.activity-detail-card .activity-date{color:var(--detail-accent)}
+.activity-detail-card .activity-date strong{color:var(--detail-accent)}
+.activity-detail-card .activity-detail-main{border-top:5px solid var(--detail-accent);background:linear-gradient(145deg,var(--detail-soft),#fff 115px);box-shadow:0 10px 28px rgba(4,55,87,.06)}
+.activity-detail-card .observation{border-left:4px solid var(--detail-accent);background:var(--detail-soft)}
+.app-main .callout{border-left:6px solid var(--accent-blue);background:linear-gradient(110deg,#eaf8fe,#fff)}
+.app-main .teacher-callout{border-left-color:var(--accent-green);background:linear-gradient(110deg,#effae8,#eaf8fe)}
+.app-main .empty-state{background:linear-gradient(135deg,#eaf8fe,#f2faeb 52%,#fff5df);border-color:#bcdfea}
+.app-main .empty-state>span{color:var(--accent-pink)}
+.app-main .empty-state h2{color:#062f50}
