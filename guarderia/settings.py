@@ -1,8 +1,14 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Carga la configuración local sin reemplazar variables definidas por el
+# servidor (systemd, Docker, panel de hosting, etc.).
+load_dotenv(BASE_DIR / ".env", override=False)
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "cambiar-esta-clave-en-produccion-guarderia")
 DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
