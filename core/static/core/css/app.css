@@ -199,3 +199,6 @@ h1,h2,h3,.person-card h3,.activity-content h3,.child-activity-info h3,.activity-
 /* Edición del expediente infantil dentro de la aplicación */
 .child-edit-page{max-width:1050px}.child-edit-header{align-items:center}.child-edit-header h1{font-family:"Fredoka",sans-serif;color:#062f50}.child-edit-header .avatar{margin-left:auto;border:4px solid #fff;background:#079bd7;color:#fff;box-shadow:0 8px 20px rgba(7,155,215,.18)}.child-edit-form{display:grid;gap:17px}.child-edit-form .form-section{padding:24px 26px}.child-edit-form .form-section:nth-of-type(2){--tile-accent:#ed0877;--tile-soft:#fff0f7}.child-edit-form .form-section:nth-of-type(3){--tile-accent:#59bd00;--tile-soft:#effae8}.child-edit-grid .form-group:has(input[type=file]),.child-edit-grid .form-group:has(textarea){grid-column:1/-1}.child-edit-form .clearable-file-input{padding:10px;border:1px solid #d7e6ec;border-radius:9px;background:#fff}
 @media(max-width:800px){.child-edit-header .avatar{margin-left:0}.child-edit-form .form-section{padding:20px}.child-edit-grid .form-group:has(input[type=file]),.child-edit-grid .form-group:has(textarea){grid-column:auto}}
+
+.enrollment-card-actions{display:flex;align-items:center;gap:9px;flex:none}
+@media(max-width:800px){.enrollment-card-actions{flex-direction:column;align-items:stretch;margin-top:16px}.enrollment-card-actions .btn{width:100%;margin-top:0}}

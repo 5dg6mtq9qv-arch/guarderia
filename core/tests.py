@@ -107,10 +107,24 @@ class FlujoFinancieroTests(TestCase):
 
     def test_documentos_muestra_espacio_y_archiva_ficha_firmada(self):
         self.client.force_login(self.user)
+        otro = Nino.objects.create(
+            nombre="Luis", apellido="Otro", fecha_nacimiento=date(2022, 2, 2),
+            representante="Familia Dos", telefono_representante="0988888888",
+        )
         listado = self.client.get(reverse("documentos"))
         self.assertEqual(listado.status_code, 200)
-        self.assertContains(listado, "Ficha firmada")
-        self.assertContains(listado, "Pendiente de firma")
+        self.assertNotContains(listado, "Pendiente de firma")
+
+        url_individual = f"{reverse('documentos')}?nino={self.nino.pk}"
+        individual = self.client.get(url_individual)
+        self.assertContains(individual, "Ficha firmada")
+        self.assertContains(individual, "Pendiente de firma")
+        self.assertContains(individual, str(self.nino))
+        bloque_firmado = individual.content.decode().split('class="card signed-files-card"', 1)[1].split("</section>", 1)[0]
+        self.assertNotIn(str(otro), bloque_firmado)
+
+        detalle = self.client.get(reverse("detalle_nino", args=[self.nino.pk]))
+        self.assertContains(detalle, url_individual)
 
         with TemporaryDirectory() as media_dir, override_settings(MEDIA_ROOT=media_dir):
             firmado = SimpleUploadedFile(
@@ -122,11 +136,11 @@ class FlujoFinancieroTests(TestCase):
                 "nino": self.nino.pk,
                 "archivo": firmado,
             })
-            self.assertRedirects(response, reverse("documentos"))
+            self.assertRedirects(response, url_individual)
             ficha = FichaInscripcion.objects.get(nino=self.nino)
             self.assertTrue(ficha.archivo_firmado.name.endswith("ficha-firmada.pdf"))
 
-            actualizado = self.client.get(reverse("documentos"))
+            actualizado = self.client.get(url_individual)
             self.assertContains(actualizado, "Documento archivado")
             self.assertContains(actualizado, "Ver archivo")
 

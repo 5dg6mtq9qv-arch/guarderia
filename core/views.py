@@ -10,6 +10,7 @@ from django.db.models import Prefetch, Q, Sum
 from django.http import Http404
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -191,6 +192,8 @@ def profesoras(request):
 @administradora_required
 def documentos(request):
     tipo = request.POST.get("destino")
+    nino_solicitado = request.GET.get("nino") or request.POST.get("nino")
+    nino_ficha = get_object_or_404(Nino, pk=nino_solicitado) if nino_solicitado else None
     form_nino = DocumentoNinoForm(prefix="nino")
     form_profesora = DocumentoProfesoraForm(prefix="profe")
     form_ficha_firmada = FichaFirmadaUploadForm()
@@ -214,12 +217,12 @@ def documentos(request):
             ficha.archivo_firmado = form_ficha_firmada.cleaned_data["archivo"]
             ficha.save(update_fields=["archivo_firmado", "actualizada"])
             messages.success(request, f"Ficha firmada de {nino} archivada correctamente.")
-            return redirect("documentos")
+            return redirect(f"{reverse('documentos')}?nino={nino.pk}")
     context = {
         "form_nino": form_nino,
         "form_profesora": form_profesora,
         "form_ficha_firmada": form_ficha_firmada,
-        "ninos_fichas": Nino.objects.select_related("ficha_inscripcion").all(),
+        "nino_ficha": nino_ficha,
         "docs_ninos": DocumentoNino.objects.select_related("nino")[:30],
         "docs_profesoras": DocumentoProfesora.objects.select_related("profesora")[:30],
     }
