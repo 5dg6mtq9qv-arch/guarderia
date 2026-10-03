@@ -6,7 +6,7 @@
   <section class="profile-hero">
     <div class="avatar xlarge">{% if nino.foto %}<img src="{{ nino.foto.url }}" alt="">{% else %}{{ nino.nombre|slice:":1" }}{{ nino.apellido|slice:":1" }}{% endif %}</div>
     <div><span class="status {{ nino.estado }}">{{ nino.get_estado_display }}</span><h1>{{ nino }}</h1><p>{{ nino.grupo|default:"Grupo por asignar" }} · {{ nino.edad }} años · Ingresó el {{ nino.fecha_ingreso|date:"d/m/Y" }}</p></div>
-    <a class="btn btn-soft" href="/admin/core/nino/{{ nino.pk }}/change/">Editar expediente</a>
+    <a class="btn btn-soft" href="{% url 'editar_nino' nino.pk %}">Editar expediente</a>
   </section>
   <div class="profile-grid">
     <section class="card"><div class="card-head"><div><span class="eyebrow">Datos familiares</span><h2>Representante</h2></div></div><dl class="details"><dt>Nombre</dt><dd>{{ nino.representante }}</dd><dt>Parentesco</dt><dd>{{ nino.parentesco|default:"—" }}</dd><dt>Teléfono</dt><dd>{{ nino.telefono_representante }}</dd><dt>Correo</dt><dd>{{ nino.correo_representante|default:"—" }}</dd><dt>Dirección</dt><dd>{{ nino.direccion|default:"—" }}</dd></dl></section>

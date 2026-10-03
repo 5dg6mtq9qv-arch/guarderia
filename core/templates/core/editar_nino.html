@@ -1,0 +1,54 @@
+{% extends "core/base.html" %}
+{% block title %}Editar expediente · {{ nino }}{% endblock %}
+{% block content %}
+<div class="page-wrap child-edit-page">
+  <a class="back" href="{% url 'detalle_nino' nino.pk %}">← Volver al expediente</a>
+  <header class="page-header child-edit-header">
+    <div><span class="eyebrow">Nómina infantil</span><h1>Editar expediente</h1><p>Actualiza la información personal, familiar y administrativa de {{ nino.nombre }}.</p></div>
+    <div class="avatar xlarge">{% if nino.foto %}<img src="{{ nino.foto.url }}" alt="Foto de {{ nino }}">{% else %}{{ nino.nombre|slice:":1" }}{{ nino.apellido|slice:":1" }}{% endif %}</div>
+  </header>
+
+  <form method="post" enctype="multipart/form-data" class="child-edit-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+    <section class="card form-section">
+      <div class="form-section-head"><span>1</span><div><h2>Datos personales</h2><p>Identificación, fechas, grupo y fotografía.</p></div></div>
+      <div class="form-grid child-edit-grid">
+        {% include "core/_form_control.html" with field=form.nombre %}
+        {% include "core/_form_control.html" with field=form.apellido %}
+        {% include "core/_form_control.html" with field=form.identificacion %}
+        {% include "core/_form_control.html" with field=form.fecha_nacimiento %}
+        {% include "core/_form_control.html" with field=form.fecha_ingreso %}
+        {% include "core/_form_control.html" with field=form.grupo %}
+        {% include "core/_form_control.html" with field=form.foto %}
+        {% include "core/_form_control.html" with field=form.estado %}
+      </div>
+    </section>
+
+    <section class="card form-section">
+      <div class="form-section-head"><span>2</span><div><h2>Representante y contacto</h2><p>Datos utilizados para comunicarse con la familia.</p></div></div>
+      <div class="form-grid child-edit-grid">
+        {% include "core/_form_control.html" with field=form.representante %}
+        {% include "core/_form_control.html" with field=form.parentesco %}
+        {% include "core/_form_control.html" with field=form.telefono_representante %}
+        {% include "core/_form_control.html" with field=form.correo_representante %}
+        {% include "core/_form_control.html" with field=form.direccion %}
+      </div>
+    </section>
+
+    <section class="card form-section">
+      <div class="form-section-head"><span>3</span><div><h2>Salud y administración</h2><p>Información importante para el cuidado y la mensualidad.</p></div></div>
+      <div class="form-grid child-edit-grid">
+        {% include "core/_form_control.html" with field=form.alergias %}
+        {% include "core/_form_control.html" with field=form.observaciones_medicas %}
+        {% include "core/_form_control.html" with field=form.pension_mensual %}
+      </div>
+    </section>
+
+    <div class="enrollment-actions">
+      <a class="btn btn-soft" href="{% url 'detalle_nino' nino.pk %}">Cancelar</a>
+      <button class="btn btn-primary" type="submit">Guardar expediente</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

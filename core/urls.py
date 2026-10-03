@@ -7,6 +7,7 @@ urlpatterns = [
     path("", views.inicio, name="inicio"),
     path("panel/", views.panel, name="panel"),
     path("nomina/", views.nomina, name="nomina"),
+    path("nomina/<int:pk>/editar/", views.editar_nino, name="editar_nino"),
     path("nomina/<int:pk>/", views.detalle_nino, name="detalle_nino"),
     path("nomina/<int:pk>/ficha-inscripcion/", views.ficha_inscripcion, name="ficha_inscripcion"),
     path("nomina/<int:pk>/ficha-inscripcion/pdf/", views.descargar_ficha_inscripcion, name="descargar_ficha_inscripcion"),

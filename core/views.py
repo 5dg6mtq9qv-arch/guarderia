@@ -142,6 +142,17 @@ def detalle_nino(request, pk):
 
 
 @administradora_required
+def editar_nino(request, pk):
+    nino = get_object_or_404(Nino, pk=pk)
+    form = NinoForm(request.POST or None, request.FILES or None, instance=nino)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, f"Expediente de {nino} actualizado correctamente.")
+        return redirect("detalle_nino", pk=nino.pk)
+    return render(request, "core/editar_nino.html", {"nino": nino, "form": form})
+
+
+@administradora_required
 def ficha_inscripcion(request, pk):
     nino = get_object_or_404(Nino, pk=pk)
     ficha, _ = FichaInscripcion.objects.get_or_create(nino=nino)

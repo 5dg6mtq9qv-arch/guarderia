@@ -130,6 +130,40 @@ class FlujoFinancieroTests(TestCase):
             self.assertContains(actualizado, "Documento archivado")
             self.assertContains(actualizado, "Ver archivo")
 
+    def test_expediente_se_edita_dentro_de_la_aplicacion(self):
+        self.client.force_login(self.user)
+        detalle = self.client.get(reverse("detalle_nino", args=[self.nino.pk]))
+        self.assertContains(detalle, reverse("editar_nino", args=[self.nino.pk]))
+        self.assertNotContains(detalle, f"/admin/core/nino/{self.nino.pk}/change/")
+
+        edicion = self.client.get(reverse("editar_nino", args=[self.nino.pk]))
+        self.assertEqual(edicion.status_code, 200)
+        self.assertContains(edicion, "Editar expediente")
+        self.assertContains(edicion, "Guardar expediente")
+
+        response = self.client.post(reverse("editar_nino", args=[self.nino.pk]), {
+            "nombre": "Ana María",
+            "apellido": "Prueba",
+            "identificacion": "EDIT-001",
+            "fecha_nacimiento": "2022-01-01",
+            "fecha_ingreso": "2026-01-15",
+            "grupo": "Inicial 1",
+            "alergias": "Ninguna",
+            "observaciones_medicas": "Sin novedades",
+            "representante": "María Prueba",
+            "parentesco": "Madre",
+            "telefono_representante": "0999999999",
+            "correo_representante": "familia@example.com",
+            "direccion": "Ibarra",
+            "pension_mensual": "175.00",
+            "estado": "activo",
+        })
+        self.assertRedirects(response, reverse("detalle_nino", args=[self.nino.pk]))
+        self.nino.refresh_from_db()
+        self.assertEqual(self.nino.nombre, "Ana María")
+        self.assertEqual(self.nino.grupo, "Inicial 1")
+        self.assertEqual(self.nino.pension_mensual, Decimal("175.00"))
+
     def test_profesora_solo_ve_sus_ninos_y_no_accede_a_finanzas(self):
         usuario_docente = get_user_model().objects.create_user("profe", password="clave-docente-123")
         usuario_docente.groups.add(Group.objects.get(name=GRUPO_PROFESORA))
