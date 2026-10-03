@@ -142,6 +142,53 @@ class DocumentoProfesora(DocumentoBase):
         return f"{self.profesora} · {self.titulo}"
 
 
+class FichaInscripcion(models.Model):
+    SEXOS = [("masculino", "Masculino"), ("femenino", "Femenino"), ("otro", "Otro")]
+
+    nino = models.OneToOneField(
+        Nino, on_delete=models.CASCADE, related_name="ficha_inscripcion", verbose_name="niño/a",
+    )
+    fecha_documento = models.DateField("fecha del documento", default=timezone.localdate)
+    sexo = models.CharField(max_length=12, choices=SEXOS, blank=True)
+    nacionalidad = models.CharField(max_length=80, default="Ecuatoriana", blank=True)
+    representante_cedula = models.CharField("cédula del representante", max_length=30, blank=True)
+
+    padre_ocupacion = models.CharField("ocupación del padre", max_length=120, blank=True)
+    padre_lugar_trabajo = models.CharField("lugar de trabajo del padre", max_length=160, blank=True)
+    padre_telefono_laboral = models.CharField("teléfono laboral del padre", max_length=30, blank=True)
+    madre_ocupacion = models.CharField("ocupación de la madre", max_length=120, blank=True)
+    madre_lugar_trabajo = models.CharField("lugar de trabajo de la madre", max_length=160, blank=True)
+    madre_telefono_laboral = models.CharField("teléfono laboral de la madre", max_length=30, blank=True)
+
+    contacto_emergencia_nombre = models.CharField("nombre del contacto", max_length=160, blank=True)
+    contacto_emergencia_parentesco = models.CharField("parentesco del contacto", max_length=60, blank=True)
+    contacto_emergencia_telefono = models.CharField("teléfono del contacto", max_length=30, blank=True)
+
+    tipo_sangre = models.CharField("tipo de sangre", max_length=10, blank=True)
+    enfermedad_cronica = models.BooleanField("¿tiene una enfermedad crónica?", default=False)
+    enfermedad_detalle = models.CharField("detalle de la enfermedad", max_length=240, blank=True)
+    toma_medicamentos = models.BooleanField("¿toma medicamentos?", default=False)
+    medicamentos_detalle = models.CharField("medicamentos y dosis", max_length=240, blank=True)
+    seguro_medico = models.BooleanField("¿tiene seguro médico?", default=False)
+    seguro_nombre = models.CharField("nombre del seguro", max_length=120, blank=True)
+    autoriza_imagen = models.BooleanField(
+        "autoriza el uso institucional de fotografías y videos", default=True,
+    )
+    archivo_firmado = models.FileField(
+        "ficha firmada", upload_to="documentos/fichas_firmadas/%Y/%m/", blank=True,
+        validators=[FileExtensionValidator(["pdf", "jpg", "jpeg", "png"])],
+    )
+    creada = models.DateTimeField(auto_now_add=True)
+    actualizada = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "ficha de inscripción"
+        verbose_name_plural = "fichas de inscripción"
+
+    def __str__(self):
+        return f"Ficha de {self.nino}"
+
+
 class NotaPersonal(models.Model):
     COLORES = [("amarillo", "Amarillo"), ("rosa", "Rosa"), ("verde", "Verde"), ("azul", "Azul")]
     titulo = models.CharField("título", max_length=160)

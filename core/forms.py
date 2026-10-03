@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.core.validators import FileExtensionValidator
 from django.db import transaction
 from django.utils import timezone
 
@@ -10,6 +11,7 @@ from .models import (
     ArchivoPublicacion,
     DocumentoNino,
     DocumentoProfesora,
+    FichaInscripcion,
     FotoActividad,
     GastoInstitucional,
     HitoDesarrollo,
@@ -107,6 +109,107 @@ class DocumentoProfesoraForm(FormularioBase):
     class Meta:
         model = DocumentoProfesora
         fields = "__all__"
+
+
+class FichaFirmadaUploadForm(forms.Form):
+    nino = forms.ModelChoiceField(queryset=Nino.objects.none(), widget=forms.HiddenInput())
+    archivo = forms.FileField(
+        label="Documento firmado",
+        validators=[FileExtensionValidator(["pdf", "jpg", "jpeg", "png"])],
+        widget=forms.ClearableFileInput(attrs={"accept": ".pdf,.jpg,.jpeg,.png"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["nino"].queryset = Nino.objects.order_by("apellido", "nombre")
+        self.fields["archivo"].widget.attrs["class"] = "signed-file-input"
+
+    def clean_archivo(self):
+        archivo = self.cleaned_data["archivo"]
+        if archivo.size > 10 * 1024 * 1024:
+            raise forms.ValidationError("El archivo no puede superar 10 MB.")
+        return archivo
+
+
+class FichaInscripcionForm(FormularioBase):
+    nino_nombre = forms.CharField(label="Nombres", max_length=100)
+    nino_apellido = forms.CharField(label="Apellidos", max_length=100)
+    nino_fecha_nacimiento = forms.DateField(label="Fecha de nacimiento")
+    nino_identificacion = forms.CharField(label="Cédula del niño/a", max_length=30, required=False)
+    nino_direccion = forms.CharField(label="Dirección domiciliaria", max_length=220, required=False)
+    representante_nombre = forms.CharField(label="Nombres completos", max_length=160)
+    representante_parentesco = forms.CharField(label="Parentesco con el niño/a", max_length=50, required=False)
+    representante_telefono = forms.CharField(label="Teléfono principal", max_length=30)
+    representante_correo = forms.EmailField(label="Correo electrónico", required=False)
+    alergias_detalle = forms.CharField(
+        label="Alergias", required=False, widget=forms.Textarea(attrs={"rows": 2}),
+    )
+    observaciones_medicas = forms.CharField(
+        label="Observaciones médicas adicionales", required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+
+    class Meta:
+        model = FichaInscripcion
+        exclude = ["nino", "archivo_firmado", "creada", "actualizada"]
+        widgets = {
+            "enfermedad_detalle": forms.TextInput(attrs={"placeholder": "Indique diagnóstico o condición"}),
+            "medicamentos_detalle": forms.TextInput(attrs={"placeholder": "Nombre, dosis y horario"}),
+            "seguro_nombre": forms.TextInput(attrs={"placeholder": "IESS, seguro privado u otro"}),
+        }
+
+    def __init__(self, *args, nino, **kwargs):
+        self.nino = nino
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.initial.update({
+                "nino_nombre": nino.nombre,
+                "nino_apellido": nino.apellido,
+                "nino_fecha_nacimiento": nino.fecha_nacimiento,
+                "nino_identificacion": nino.identificacion or "",
+                "nino_direccion": nino.direccion,
+                "representante_nombre": nino.representante,
+                "representante_parentesco": nino.parentesco,
+                "representante_telefono": nino.telefono_representante,
+                "representante_correo": nino.correo_representante,
+                "alergias_detalle": nino.alergias,
+                "observaciones_medicas": nino.observaciones_medicas,
+            })
+        for nombre in ("nino_fecha_nacimiento", "fecha_documento"):
+            self.fields[nombre].widget.input_type = "date"
+            self.fields[nombre].widget.format = "%Y-%m-%d"
+
+    def clean(self):
+        cleaned = super().clean()
+        requisitos = [
+            ("enfermedad_cronica", "enfermedad_detalle", "Describa la enfermedad crónica."),
+            ("toma_medicamentos", "medicamentos_detalle", "Indique el medicamento, dosis y horario."),
+            ("seguro_medico", "seguro_nombre", "Indique el nombre del seguro médico."),
+        ]
+        for indicador, detalle, mensaje in requisitos:
+            if cleaned.get(indicador) and not cleaned.get(detalle):
+                self.add_error(detalle, mensaje)
+        return cleaned
+
+    @transaction.atomic
+    def save(self, commit=True):
+        ficha = super().save(commit=False)
+        ficha.nino = self.nino
+        self.nino.nombre = self.cleaned_data["nino_nombre"].strip()
+        self.nino.apellido = self.cleaned_data["nino_apellido"].strip()
+        self.nino.fecha_nacimiento = self.cleaned_data["nino_fecha_nacimiento"]
+        self.nino.identificacion = self.cleaned_data.get("nino_identificacion") or None
+        self.nino.direccion = self.cleaned_data.get("nino_direccion", "").strip()
+        self.nino.representante = self.cleaned_data["representante_nombre"].strip()
+        self.nino.parentesco = self.cleaned_data.get("representante_parentesco", "").strip()
+        self.nino.telefono_representante = self.cleaned_data["representante_telefono"].strip()
+        self.nino.correo_representante = self.cleaned_data.get("representante_correo", "").strip()
+        self.nino.alergias = self.cleaned_data.get("alergias_detalle", "").strip()
+        self.nino.observaciones_medicas = self.cleaned_data.get("observaciones_medicas", "").strip()
+        if commit:
+            self.nino.save()
+            ficha.save()
+        return ficha
 
 
 class NotaPersonalForm(FormularioBase):

@@ -13,7 +13,7 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from PIL import Image
 
-from .models import Actividad, FotoActividad, GastoInstitucional, Mensualidad, Nino, NominaDocente, Profesora, TransaccionPago
+from .models import Actividad, FichaInscripcion, FotoActividad, GastoInstitucional, Mensualidad, Nino, NominaDocente, Profesora, TransaccionPago
 from .roles import GRUPO_ADMIN, GRUPO_PROFESORA, configurar_roles
 
 
@@ -61,6 +61,74 @@ class FlujoFinancieroTests(TestCase):
         for ruta in rutas:
             with self.subTest(ruta=ruta):
                 self.assertEqual(self.client.get(reverse(ruta)).status_code, 200)
+
+    def test_ficha_inscripcion_se_completa_y_descarga_como_pdf(self):
+        self.client.force_login(self.user)
+        formulario = self.client.get(reverse("ficha_inscripcion", args=[self.nino.pk]))
+        self.assertEqual(formulario.status_code, 200)
+        self.assertContains(formulario, "Ficha de inscripción")
+        self.assertContains(formulario, "Guardar y descargar PDF")
+
+        response = self.client.post(reverse("ficha_inscripcion", args=[self.nino.pk]), {
+            "nino_nombre": "Ana",
+            "nino_apellido": "Prueba Actualizada",
+            "nino_fecha_nacimiento": "2022-01-01",
+            "nino_identificacion": "NIN-001",
+            "nino_direccion": "Ibarra",
+            "representante_nombre": "María Prueba",
+            "representante_parentesco": "Madre",
+            "representante_telefono": "0999999999",
+            "representante_correo": "familia@example.com",
+            "fecha_documento": "2026-10-03",
+            "sexo": "femenino",
+            "nacionalidad": "Ecuatoriana",
+            "representante_cedula": "1000000001",
+            "contacto_emergencia_nombre": "José Prueba",
+            "contacto_emergencia_parentesco": "Tío",
+            "contacto_emergencia_telefono": "0988888888",
+            "tipo_sangre": "O+",
+            "seguro_medico": "on",
+            "seguro_nombre": "IESS",
+            "autoriza_imagen": "on",
+            "accion": "guardar",
+        })
+        self.assertRedirects(response, reverse("ficha_inscripcion", args=[self.nino.pk]))
+        self.nino.refresh_from_db()
+        ficha = FichaInscripcion.objects.get(nino=self.nino)
+        self.assertEqual(self.nino.apellido, "Prueba Actualizada")
+        self.assertEqual(ficha.contacto_emergencia_nombre, "José Prueba")
+
+        pdf = self.client.get(reverse("descargar_ficha_inscripcion", args=[self.nino.pk]))
+        self.assertEqual(pdf.status_code, 200)
+        self.assertEqual(pdf["Content-Type"], "application/pdf")
+        self.assertIn("attachment", pdf["Content-Disposition"])
+        self.assertTrue(pdf.content.startswith(b"%PDF"))
+        self.assertGreater(len(pdf.content), 10_000)
+
+    def test_documentos_muestra_espacio_y_archiva_ficha_firmada(self):
+        self.client.force_login(self.user)
+        listado = self.client.get(reverse("documentos"))
+        self.assertEqual(listado.status_code, 200)
+        self.assertContains(listado, "Ficha firmada")
+        self.assertContains(listado, "Pendiente de firma")
+
+        with TemporaryDirectory() as media_dir, override_settings(MEDIA_ROOT=media_dir):
+            firmado = SimpleUploadedFile(
+                "ficha-firmada.pdf", b"%PDF-1.4\n% documento firmado de prueba",
+                content_type="application/pdf",
+            )
+            response = self.client.post(reverse("documentos"), {
+                "destino": "ficha_firmada",
+                "nino": self.nino.pk,
+                "archivo": firmado,
+            })
+            self.assertRedirects(response, reverse("documentos"))
+            ficha = FichaInscripcion.objects.get(nino=self.nino)
+            self.assertTrue(ficha.archivo_firmado.name.endswith("ficha-firmada.pdf"))
+
+            actualizado = self.client.get(reverse("documentos"))
+            self.assertContains(actualizado, "Documento archivado")
+            self.assertContains(actualizado, "Ver archivo")
 
     def test_profesora_solo_ve_sus_ninos_y_no_accede_a_finanzas(self):
         usuario_docente = get_user_model().objects.create_user("profe", password="clave-docente-123")

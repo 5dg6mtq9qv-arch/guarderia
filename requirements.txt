@@ -2,3 +2,4 @@ Django==5.1.15
 psycopg[binary]==3.2.13
 Pillow==11.3.0
 python-dotenv==1.1.1
+reportlab==4.4.4

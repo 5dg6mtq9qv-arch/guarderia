@@ -8,8 +8,10 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Prefetch, Q, Sum
 from django.http import Http404
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.text import slugify
 
 from .forms import (
     AporteForm,
@@ -17,6 +19,8 @@ from .forms import (
     ArchivoPublicacionForm,
     DocumentoNinoForm,
     DocumentoProfesoraForm,
+    FichaFirmadaUploadForm,
+    FichaInscripcionForm,
     GastoForm,
     HitoForm,
     MensualidadForm,
@@ -36,6 +40,7 @@ from .models import (
     Actividad,
     DocumentoNino,
     DocumentoProfesora,
+    FichaInscripcion,
     GastoInstitucional,
     FotoActividad,
     Mensualidad,
@@ -46,7 +51,9 @@ from .models import (
     Publicacion,
     SeguimientoMensual,
     TransaccionPago,
+    Institucion,
 )
+from .pdf_documents import generar_ficha_inscripcion_pdf
 from .roles import es_administradora, es_profesora
 
 
@@ -135,6 +142,32 @@ def detalle_nino(request, pk):
 
 
 @administradora_required
+def ficha_inscripcion(request, pk):
+    nino = get_object_or_404(Nino, pk=pk)
+    ficha, _ = FichaInscripcion.objects.get_or_create(nino=nino)
+    form = FichaInscripcionForm(request.POST or None, instance=ficha, nino=nino)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Ficha de inscripción guardada correctamente.")
+        if request.POST.get("accion") == "guardar_descargar":
+            return redirect("descargar_ficha_inscripcion", pk=nino.pk)
+        return redirect("ficha_inscripcion", pk=nino.pk)
+    return render(request, "core/ficha_inscripcion.html", {"nino": nino, "ficha": ficha, "form": form})
+
+
+@administradora_required
+def descargar_ficha_inscripcion(request, pk):
+    nino = get_object_or_404(Nino, pk=pk)
+    ficha, _ = FichaInscripcion.objects.get_or_create(nino=nino)
+    institucion = Institucion.objects.first()
+    archivo = generar_ficha_inscripcion_pdf(ficha, institucion)
+    nombre = slugify(nino.nombre_completo) or f"nino-{nino.pk}"
+    response = HttpResponse(archivo.getvalue(), content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="ficha-inscripcion-{nombre}.pdf"'
+    return response
+
+
+@administradora_required
 def profesoras(request):
     form = ProfesoraForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
@@ -149,6 +182,7 @@ def documentos(request):
     tipo = request.POST.get("destino")
     form_nino = DocumentoNinoForm(prefix="nino")
     form_profesora = DocumentoProfesoraForm(prefix="profe")
+    form_ficha_firmada = FichaFirmadaUploadForm()
     if request.method == "POST" and tipo == "nino":
         form_nino = DocumentoNinoForm(request.POST, request.FILES, prefix="nino")
         if form_nino.is_valid():
@@ -161,9 +195,20 @@ def documentos(request):
             form_profesora.save()
             messages.success(request, "Documento de la profesora archivado.")
             return redirect("documentos")
+    elif request.method == "POST" and tipo == "ficha_firmada":
+        form_ficha_firmada = FichaFirmadaUploadForm(request.POST, request.FILES)
+        if form_ficha_firmada.is_valid():
+            nino = form_ficha_firmada.cleaned_data["nino"]
+            ficha, _ = FichaInscripcion.objects.get_or_create(nino=nino)
+            ficha.archivo_firmado = form_ficha_firmada.cleaned_data["archivo"]
+            ficha.save(update_fields=["archivo_firmado", "actualizada"])
+            messages.success(request, f"Ficha firmada de {nino} archivada correctamente.")
+            return redirect("documentos")
     context = {
         "form_nino": form_nino,
         "form_profesora": form_profesora,
+        "form_ficha_firmada": form_ficha_firmada,
+        "ninos_fichas": Nino.objects.select_related("ficha_inscripcion").all(),
         "docs_ninos": DocumentoNino.objects.select_related("nino")[:30],
         "docs_profesoras": DocumentoProfesora.objects.select_related("profesora")[:30],
     }

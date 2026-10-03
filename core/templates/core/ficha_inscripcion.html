@@ -1,0 +1,97 @@
+{% extends "core/base.html" %}
+{% block title %}Ficha de inscripción · {{ nino }}{% endblock %}
+{% block content %}
+<div class="page-wrap enrollment-page">
+  <a class="back" href="{% url 'detalle_nino' nino.pk %}">← Volver al expediente</a>
+  <header class="page-header enrollment-header">
+    <div>
+      <span class="eyebrow">Documento para firma</span>
+      <h1>Ficha de inscripción</h1>
+      <p>Completa la información de {{ nino.nombre }}. Al descargarla se incluirán el acta de compromiso y la autorización de imagen.</p>
+    </div>
+    <a class="btn btn-soft" href="{% url 'descargar_ficha_inscripcion' nino.pk %}">↓ Descargar PDF actual</a>
+  </header>
+
+  <div class="enrollment-callout">
+    <span>✓</span>
+    <div><strong>Los datos básicos se sincronizan con el expediente del niño/a.</strong><p>La firma se deja en blanco para que el representante y la institución firmen el documento impreso.</p></div>
+  </div>
+
+  <form method="post" class="enrollment-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+    <section class="card form-section">
+      <div class="form-section-head"><span>1</span><div><h2>Datos del niño/a</h2><p>Identificación y domicilio.</p></div></div>
+      <div class="form-grid enrollment-grid">
+        {% include "core/_form_control.html" with field=form.nino_nombre %}
+        {% include "core/_form_control.html" with field=form.nino_apellido %}
+        {% include "core/_form_control.html" with field=form.nino_fecha_nacimiento %}
+        {% include "core/_form_control.html" with field=form.sexo %}
+        {% include "core/_form_control.html" with field=form.nacionalidad %}
+        {% include "core/_form_control.html" with field=form.nino_identificacion %}
+        {% include "core/_form_control.html" with field=form.nino_direccion %}
+        {% include "core/_form_control.html" with field=form.fecha_documento %}
+      </div>
+    </section>
+
+    <section class="card form-section">
+      <div class="form-section-head"><span>2</span><div><h2>Representante legal</h2><p>Datos de contacto de la persona que firmará.</p></div></div>
+      <div class="form-grid enrollment-grid">
+        {% include "core/_form_control.html" with field=form.representante_nombre %}
+        {% include "core/_form_control.html" with field=form.representante_cedula %}
+        {% include "core/_form_control.html" with field=form.representante_parentesco %}
+        {% include "core/_form_control.html" with field=form.representante_telefono %}
+        {% include "core/_form_control.html" with field=form.representante_correo %}
+      </div>
+    </section>
+
+    <section class="card form-section">
+      <div class="form-section-head"><span>3</span><div><h2>Información laboral</h2><p>Datos opcionales del padre y la madre.</p></div></div>
+      <div class="form-grid enrollment-grid three-cols">
+        {% include "core/_form_control.html" with field=form.padre_ocupacion %}
+        {% include "core/_form_control.html" with field=form.padre_lugar_trabajo %}
+        {% include "core/_form_control.html" with field=form.padre_telefono_laboral %}
+        {% include "core/_form_control.html" with field=form.madre_ocupacion %}
+        {% include "core/_form_control.html" with field=form.madre_lugar_trabajo %}
+        {% include "core/_form_control.html" with field=form.madre_telefono_laboral %}
+      </div>
+    </section>
+
+    <section class="card form-section">
+      <div class="form-section-head"><span>4</span><div><h2>Contacto de emergencia</h2><p>Una persona adicional al representante principal.</p></div></div>
+      <div class="form-grid enrollment-grid three-cols">
+        {% include "core/_form_control.html" with field=form.contacto_emergencia_nombre %}
+        {% include "core/_form_control.html" with field=form.contacto_emergencia_parentesco %}
+        {% include "core/_form_control.html" with field=form.contacto_emergencia_telefono %}
+      </div>
+    </section>
+
+    <section class="card form-section medical-section">
+      <div class="form-section-head"><span>5</span><div><h2>Información médica</h2><p>Condiciones que el equipo debe conocer.</p></div></div>
+      <div class="form-grid enrollment-grid">
+        {% include "core/_form_control.html" with field=form.tipo_sangre %}
+        {% include "core/_form_control.html" with field=form.alergias_detalle %}
+        {% include "core/_form_control.html" with field=form.enfermedad_cronica %}
+        {% include "core/_form_control.html" with field=form.enfermedad_detalle %}
+        {% include "core/_form_control.html" with field=form.toma_medicamentos %}
+        {% include "core/_form_control.html" with field=form.medicamentos_detalle %}
+        {% include "core/_form_control.html" with field=form.seguro_medico %}
+        {% include "core/_form_control.html" with field=form.seguro_nombre %}
+        {% include "core/_form_control.html" with field=form.observaciones_medicas %}
+      </div>
+    </section>
+
+    <section class="card form-section consent-section">
+      <div class="form-section-head"><span>6</span><div><h2>Autorización de imagen</h2><p>La elección aparecerá claramente en el PDF antes de la línea de firma.</p></div></div>
+      <div class="consent-choice">{% include "core/_form_control.html" with field=form.autoriza_imagen %}</div>
+    </section>
+
+    <div class="enrollment-actions">
+      <a class="btn btn-soft" href="{% url 'detalle_nino' nino.pk %}">Cancelar</a>
+      <button class="btn btn-soft" type="submit" name="accion" value="guardar">Guardar cambios</button>
+      <button class="btn btn-primary" type="submit" name="accion" value="guardar_descargar">Guardar y descargar PDF</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

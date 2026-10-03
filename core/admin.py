@@ -6,6 +6,7 @@ from .models import (
     ArchivoPublicacion,
     DocumentoNino,
     DocumentoProfesora,
+    FichaInscripcion,
     FotoActividad,
     GastoInstitucional,
     HitoDesarrollo,
@@ -103,6 +104,7 @@ class NotaAdmin(admin.ModelAdmin):
 admin.site.register(Institucion)
 admin.site.register(DocumentoNino)
 admin.site.register(DocumentoProfesora)
+admin.site.register(FichaInscripcion)
 admin.site.register(TransaccionPago)
 admin.site.register(AporteFamiliar)
 admin.site.register(GastoInstitucional)
